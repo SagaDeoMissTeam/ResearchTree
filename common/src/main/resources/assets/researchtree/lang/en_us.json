@@ -1,0 +1,15 @@
+{
+  "research.researchtree.some_research" : "Some",
+  "research.ui.info.requirements" : "Requirements",
+  "research.ui.info.rewards" : "Rewards",
+  "research.ui.info.research_button" : "Research",
+  "research.ui.info.stop_research_button" : "Cancel Research",
+  "research.ui.info.tool.focus_button" : "Focus",
+  "research.ui.info.tool.show_parent_button" : "Show Parent",
+  "research.ui.info.close_button" : "Close",
+  "research.ui.info.cancel_button" : "Cancel",
+  "research.ui.info.accept_button" : "Accept",
+  "research.ui.info.cancel_research_title" : "Do you really want to cancel the study?",
+  "research.ui.info.cancel_research_title.addition" : "\n\nAfter cancellation, you will receive a refund of §c%s%%§r of the resources spent.",
+  "research.ui.info.modal.warning.label" : "Warning!"
+}
