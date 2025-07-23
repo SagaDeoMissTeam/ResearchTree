@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "researchtree",
+  "version": "${version}",
+  "name": "ResearchTree",
+  "description": "",
+  "authors": [
+    ""
+  ],
+  "contact": {
+    "homepage": ""
+  },
+  "license": "MIT",
+  "icon": "assets/researchtree/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.sixik.researchtree.fabric.ResearchTreeFabric"
+    ],
+    "client": [
+      "net.sixik.researchtree.fabric.client.ResearchTreeFabricClient"
+    ]
+  },
+  "mixins": [
+    "researchtree.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "architectury": ">=13.0.8",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
