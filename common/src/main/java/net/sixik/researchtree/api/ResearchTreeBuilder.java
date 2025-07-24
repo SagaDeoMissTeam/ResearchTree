@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.compat.ScriptContext;
 import net.sixik.researchtree.compat.crafttweaker.CraftTweakerScriptContext;
+import net.sixik.researchtree.compat.kubejs.KubejSScriptContext;
 import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
@@ -17,15 +18,16 @@ import org.openzen.zencode.java.ZenCodeType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 
 @ZenRegister
 @ZenCodeType.Name("mods.researchtree.ResearchTreeBuilder")
 public class ResearchTreeBuilder {
+
+    public static ConcurrentHashMap<ResourceLocation, ResearchData> DATA_BUILDER = new ConcurrentHashMap<>();
 
     protected final ScriptContext context;
     protected ResourceLocation treeId;
@@ -35,6 +37,10 @@ public class ResearchTreeBuilder {
         this.treeId = treeId;
         this.context = context;
         this.researchBuilders = new ArrayList<>();
+    }
+
+    public static ResearchTreeBuilder create(ResourceLocation treeId) {
+        return new ResearchTreeBuilder(treeId, new KubejSScriptContext());
     }
 
     public static ResearchTreeBuilder create(ResourceLocation treeId, ScriptContext context) {
@@ -55,14 +61,7 @@ public class ResearchTreeBuilder {
             researchData.addResearch(researchBuilder.complete());
         }
 
-        ServerResearchManager manager = ResearchUtils.getManagerCast(false);
-        manager.addResearchDataWithReplace(researchData);
-
-        ResearchTree.MOD_CONFIG.getResearchTreeId().ifPresent(treeId -> {
-            if(treeId == researchData.getId())
-                manager.syncResearchDataWithAll(treeId);
-
-        });
+        DATA_BUILDER.put(researchData.getId(), researchData);
     }
 
     @ZenCodeType.Method("create")

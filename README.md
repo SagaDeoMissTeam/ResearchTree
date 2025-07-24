@@ -1,6 +1,13 @@
+# ResearchTreeMod
+
+ResearchTreeMod - The mod adds a research tree to the game, which will be useful for developers who want to make a step-by-step development.
+
+## Integration
+- CraftTweaker
+- KubeJS
 
 # For Modpack Developers
-To create your own research trees, you can use scripts for 2 mods. </br>
+To create your own research trees, you can use scripts for 2 mods. (CraftTweaker, KubeJS) </br>
 
 - *There is also a game editor inside.* **[Coming Soon]**
 
@@ -8,17 +15,11 @@ After creating the research tree, localization keys are generated for the title 
 - Title: `research.'namespace'.'path'`             `research.researchtreemod.myresearch_1`
 - Subtitle: `research.'namespace'.'path'.subtitle` `research.researchtreemod.myresearch_1.subtitle`
 
-## Crafttweaker
-
-```ts
-import mods.researchtree.ResearchTreeBuilder;
-
-ResearchTreeBuilder.create()
-```
+## ScriptApi
 
 ### ResearchTreeBuilder
-
-```import mods.researchtree.ResearchTreeBuilder;```
+ 
+- For CraftTweaker ```import mods.researchtree.ResearchTreeBuilder;```
 
 | Method      | Params                         | Return              | Descriptions                                                           |
 |-------------|--------------------------------|---------------------|------------------------------------------------------------------------|
@@ -27,7 +28,8 @@ ResearchTreeBuilder.create()
 | build       |                                |                     | The method that indicates the end of the creation of the research tree |
 
 ### ResearchBuilder
-```import mods.researchtree.ResearchBuilder;```
+
+- For CraftTweaker ```import mods.researchtree.ResearchBuilder;```
 
 | Method                 | Params                         | Return          | Descriptions                                                                                                               | Example                                                                                                        |
 |------------------------|--------------------------------|-----------------|----------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
@@ -42,8 +44,6 @@ ResearchTreeBuilder.create()
 | refundPercent          | percent as double              | ResearchBuilder | How many resources will be returned if the study is canceled. By default, it takes the value from the config               | refundPercent(57.5d);                                                                                          |
 
 
-## KubeJS
-
 ## ContentIds
 
 The ID of the elements to add to the study using `addRequirement` and `addReward`
@@ -57,3 +57,38 @@ The ID of the elements to add to the study using `addRequirement` and `addReward
 | Id          | Arguments | Description                   |
 |-------------|-----------|-------------------------------|
 | item_reward | ItemStack | Reward in the form of an item |
+
+## Example
+
+### CraftTweaker
+```ts
+import mods.researchtree.ResearchTreeBuilder;
+
+var builder = ResearchTreeBuilder.create(<resource:minecraft:test>);
+
+builder.addResearch(<resource:minecraft:test_1>).addRequirement("item_requirement", <item:minecraft:diamond> * 2).addParent(<resource:minecraft:test2>)
+.stopping(false)
+.addDescription("Hello World!");
+
+builder.addResearch(<resource:minecraft:test2>).addRequirement("item_requirement", <item:minecraft:diamond>)
+.addRequirement("item_requirement", <item:minecraft:iron_ingot> * 5).addReward("item_reward", <item:minecraft:bedrock> * 6)
+.refundPercent(57.5D);
+
+builder.build();
+```
+
+### KubeJS 
+```js
+let builder = ResearchTreeBuilder.create('minecraft:test');
+
+builder.addResearch('minecraft:test_1').addRequirement("item_requirement", Item.of('minecraft:diamond'))
+.addParent('minecraft:test2')
+.stopping(false)
+.addDescription("Hello World!");
+
+builder.addResearch('minecraft:test2').addRequirement("item_requirement", Item.of('minecraft:diamond'))
+.addRequirement("item_requirement", Item.of('minecraft:iron_ingot')).addReward("item_reward", Item.of('2x minecraft:bedrock'))
+.refundPercent(57.5);
+
+builder.build();
+```

@@ -29,6 +29,7 @@ repositories {
         name = 'NeoForged'
         url = 'https://maven.neoforged.net/releases'
     }
+
 }
 
 dependencies {
@@ -51,6 +52,11 @@ dependencies {
 
     modImplementation "curse.maven:sdm-economy-1102542:6770946"
     modImplementation "curse.maven:crafttweaker-239197:6434161"
+    modImplementation "curse.maven:rhino-416294:6184623"
+    modImplementation "dev.latvian.apps:tiny-java-server:1.0.0-build.26"
+
+    modImplementation("dev.latvian.mods:kubejs-neoforge:2101.7.2-build.233")
+    minecraftClientLibraries("dev.latvian.apps:tiny-java-server:1.0.0-build.26")
 }
 
 processResources {

@@ -6,6 +6,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
+import net.sixik.researchtree.api.ResearchTreeBuilder;
 import net.sixik.researchtree.network.ask.SyncResearchASK;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
 import net.sixik.researchtree.research.BaseResearch;
@@ -59,6 +60,13 @@ public class ServerResearchManager extends ResearchManager {
         executor.submit(() -> {
             while (!shutdown) {
                 try {
+                    if(!ResearchTreeBuilder.DATA_BUILDER.isEmpty()) {
+                        researchesData.clear();
+                        researchesData.putAll(ResearchTreeBuilder.DATA_BUILDER);
+                        ResearchTreeBuilder.DATA_BUILDER.clear();
+                    }
+
+
                     Runnable task = tasks.take();
                     if (!shutdown) {
                         task.run();

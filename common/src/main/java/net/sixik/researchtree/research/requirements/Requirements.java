@@ -10,16 +10,20 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.player.Player;
+import net.sixik.researchtree.api.TooltipSupport;
 import net.sixik.researchtree.client.render.RenderTooltip;
 import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.sorter.Sorter;
 import net.sixik.researchtree.utils.ResearchRenderUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
-public abstract class Requirements {
+public abstract class Requirements implements TooltipSupport {
 
+    protected List<String> tooltips = new ArrayList<>();
 
     public Requirements(Void v) {}
 
@@ -60,6 +64,11 @@ public abstract class Requirements {
 
     public String getId() {
         return this.getClass().getName();
+    }
+
+    @Override
+    public List<String> getTooltipList() {
+        return tooltips;
     }
 }
 

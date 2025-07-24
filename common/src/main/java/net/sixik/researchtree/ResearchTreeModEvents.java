@@ -12,20 +12,12 @@ import net.sixik.researchtree.utils.ResearchUtils;
 public class ResearchTreeModEvents {
 
     public static void init() {
-        LifecycleEvent.SERVER_STARTED.register(ServerResearchManager::new);
+        LifecycleEvent.SERVER_BEFORE_START.register(ServerResearchManager::new);
         LifecycleEvent.SERVER_STOPPED.register(server -> {
 
             if(ServerResearchManager.getInstance() != null) {
                 ServerResearchManager.getInstance().shutdown();
             }
-        });
-
-        PlayerEvent.PLAYER_JOIN.register(serverPlayer -> {
-            SendPlayerResearchDataS2C.sendTo(serverPlayer);
-            ServerResearchManager researchManager = ResearchUtils.getManagerCast(false);
-            ResearchTree.MOD_CONFIG.getResearchTreeId().flatMap(researchManager::getResearchData).ifPresent(data -> {
-                new SyncResearchASK(null).startRequest(serverPlayer, data.getId());
-            });
         });
     }
 }

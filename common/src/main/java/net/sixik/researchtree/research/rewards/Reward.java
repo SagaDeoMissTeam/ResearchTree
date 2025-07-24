@@ -9,11 +9,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.player.Player;
+import net.sixik.researchtree.api.TooltipSupport;
 import net.sixik.researchtree.client.render.RenderTooltip;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.utils.ResearchRenderUtils;
 
-public abstract class Reward {
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class Reward implements TooltipSupport {
+
+    protected List<String> tooltips = new ArrayList<>();
 
     public static final String ID_KEY = "object_id";
 
@@ -38,4 +44,10 @@ public abstract class Reward {
     public String getId() {
         return this.getClass().getName();
     }
+
+    @Override
+    public List<String> getTooltipList() {
+        return tooltips;
+    }
 }
+
