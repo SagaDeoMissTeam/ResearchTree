@@ -18,7 +18,6 @@ import net.sixik.researchtree.network.fromServer.SendCompleteResearchingS2C;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
 import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.manager.PlayerResearchData;
-import net.sixik.researchtree.research.manager.ResearchManager;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
@@ -296,7 +295,37 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
             }
         }
 
-        manager.addStartResearch(player, this);
+        PlayerResearchData playerData = manager.getOrCreatePlayerData(player);
+
+        long researchTime = this.getResearchTime();
+
+        if(researchTime == -1)
+            researchTime = ResearchTree.MOD_CONFIG.getDefaultResearchTimeMs();
+
+        if(researchTime <= 0) {
+            this.onResearchEnd(player);
+        } else {
+            playerData.addProgressResearch(this.getId(), researchTime);
+
+            if (player instanceof ServerPlayer serverPlayer) {
+                SendPlayerResearchDataChangeS2C.sendAddProgress(serverPlayer, this.getId(), researchTime);
+            }
+        }
+    }
+
+    public void onResearchCancel(Player player) {
+        ServerResearchManager manager = ResearchUtils.getManagerCast(false);
+        manager.getPlayerDataOptional(player).ifPresent(playerData -> {
+
+            double percentRefund = getRefundPercent();
+
+            for (Requirements requirement : getRequirements()) {
+                requirement.refund(player, this, percentRefund);
+            }
+
+            playerData.removeProgressResearch(this.getId());
+            SendPlayerResearchDataChangeS2C.sendRemoveProgress((ServerPlayer) player, this.getId());
+        });
     }
 
     public void onResearchEnd(Player player) {
@@ -358,6 +387,10 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         NbtUtils.putList(nbt, PARENTS_KEY, getParentResearchesIds(), (parentResearchesId) -> ResourceLocation.CODEC.encodeStart(NbtOps.INSTANCE, parentResearchesId).getOrThrow());
         NbtUtils.putList(nbt, DESCRIPTION_KEY, getDescriptionRaw(), StringTag::valueOf);
 
+        nbt.putDouble("refund_dat", refundPercent);
+        nbt.putLong("researchTime", researchTime);
+        nbt.putBoolean("researchStopping", researchStopping);
+
         return nbt;
     }
 
@@ -367,6 +400,13 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         getRewards().clear();
         getParentResearchesIds().clear();
         getDescription().clear();
+
+        if(nbt.contains("refund_dat"))
+            refundPercent = nbt.getDouble("refund_dat");
+        if(nbt.contains("researchTime"))
+            researchTime = nbt.getLong("researchTime");
+        if(nbt.contains("researchStopping"))
+            researchStopping = nbt.getBoolean("researchStopping");
 
         NbtUtils.getList(nbt, REQUIREMENTS_KEY, tag -> {
             CompoundTag d1 = (CompoundTag) (tag);

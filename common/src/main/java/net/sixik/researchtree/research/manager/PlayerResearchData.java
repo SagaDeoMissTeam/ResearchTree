@@ -8,10 +8,13 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.FullCodecSerializer;
+import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
+import net.sixik.researchtree.research.ResearchChangeType;
 import net.sixik.researchtree.utils.ResearchUtils;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 
 public class PlayerResearchData implements FullCodecSerializer<PlayerResearchData> {
@@ -36,6 +39,7 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
 
     protected final Object syncResearch = new Object();
     protected final Object syncProgress = new Object();
+    protected final CopyOnWriteArraySet<Event> listeners = new CopyOnWriteArraySet<>();
 
     public PlayerResearchData(UUID playerId) {
         this(playerId, new ArrayList<>(), new ArrayList<>());
@@ -65,6 +69,14 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
 
     protected List<ResearchProgressData> getProgressData() {
         return progressData;
+    }
+
+    public void addListener(Event event) {
+        listeners.add(event);
+    }
+
+    public boolean removeListener(Event event) {
+        return listeners.remove(event);
     }
 
     public void addUnlockedResearch(ResourceLocation researchId) {
@@ -228,7 +240,7 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
                 ).apply(instance, ResearchProgressData::new));
 
         public static final StreamCodec<FriendlyByteBuf, ResearchProgressData> STREAM_CODEC = StreamCodec.composite(
-                ResourceLocation.STREAM_CODEC,  ResearchProgressData::getId,
+                ResourceLocation.STREAM_CODEC, ResearchProgressData::getId,
                 ByteBufCodecs.VAR_LONG,        ResearchProgressData::getDurationMs,
                 ByteBufCodecs.VAR_LONG,        ResearchProgressData::getElapsedMs,
                 ByteBufCodecs.BOOL,            ResearchProgressData::isPaused,
@@ -319,5 +331,9 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         public StreamCodec<FriendlyByteBuf, ResearchProgressData> streamCodec() {
             return STREAM_CODEC;
         }
+    }
+
+    public interface Event {
+        void onEvent(ResourceLocation researchId, ResearchChangeType type);
     }
 }

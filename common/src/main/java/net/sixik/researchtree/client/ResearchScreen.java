@@ -37,7 +37,6 @@ public class ResearchScreen extends BaseScreen {
     protected ResearchMovePanel movePanel;
     protected ResearchInfoPanel infoPanel;
     protected ResearchInfoToolPanel infoToolPanel;
-    protected ResearchToolPanel toolPanel;
 
     protected List<SelectRender> selectRenders = new ArrayList<>();
 
@@ -62,11 +61,15 @@ public class ResearchScreen extends BaseScreen {
     }
 
     @Override
+    public void tick() {
+        super.tick();
+    }
+
+    @Override
     public void addWidgets() {
         add(movePanel = new ResearchMovePanel(this));
         add(infoPanel = new ResearchInfoPanel(this));
         add(infoToolPanel = new ResearchInfoToolPanel(this, infoPanel));
-        add(toolPanel = new ResearchToolPanel(this));
     }
 
     public void setModalPanel(@Nullable BaseModalPanel currentModalPanel) {
@@ -142,10 +145,6 @@ public class ResearchScreen extends BaseScreen {
         return m.isPresent() && m.get() == widget;
     }
 
-    public static boolean isMouseOverAdvanced(Widget widget) {
-       return Instance.isMouseOver(widget.posX, widget.posX, widget.width, widget.height);
-    }
-
     @Override
     public void alignWidgets() {
         movePanel.setSize(this.width, this.height - UP_PANEL_HEIGHT - DOWN_PANEL_HEIGHT);
@@ -155,11 +154,6 @@ public class ResearchScreen extends BaseScreen {
         infoPanel.setPos(0, UP_PANEL_HEIGHT);
         infoPanel.setSize(100, movePanel.height);
         infoPanel.alignWidgets();
-
-
-        toolPanel.setSize(this.width / 6, UP_PANEL_HEIGHT);
-        toolPanel.setPos(this.width - toolPanel.width, 0);
-        toolPanel.alignWidgets();
 
         if(this.currentModalPanel != null)
             setModalPanel(currentModalPanel);

@@ -1,5 +1,6 @@
 package net.sixik.researchtree.client;
 
+import dev.architectury.networking.NetworkManager;
 import dev.ftb.mods.ftblibrary.icon.Icons;
 import dev.ftb.mods.ftblibrary.ui.*;
 import dev.ftb.mods.ftblibrary.ui.input.MouseButton;
@@ -12,7 +13,9 @@ import net.sixik.researchtree.client.render.ModalRenderReward;
 import net.sixik.researchtree.client.render.RenderRequirements;
 import net.sixik.researchtree.client.render.RenderRewards;
 import net.sixik.researchtree.client.widgets.BaseModalPanel;
+import net.sixik.researchtree.network.fromClient.SendCancelResearchC2S;
 import net.sixik.researchtree.network.fromClient.SendStartResearchC2S;
+import net.sixik.researchtree.research.ResearchStage;
 import net.sixik.researchtree.research.manager.ClientResearchManager;
 import net.sixik.researchtree.research.rewards.Reward;
 import net.sixik.researchtree.utils.ResearchUtils;
@@ -84,6 +87,7 @@ public class ResearchInfoModalPanel extends BaseModalPanel {
                 public void onClicked(MouseButton mouseButton) {
                     ClientResearchManager manager = ResearchUtils.getManagerCast(true);
                     SendStartResearchC2S.send(ResearchScreen.getResearch().research.getId(), manager.getResearchData().get().getId());
+                    ResearchScreen.Instance.infoPanel.updateStage(ResearchStage.START_RESEARCH);
                     ResearchScreen.Instance.removeAnyModalPanel();
                 }
 
@@ -279,7 +283,10 @@ public class ResearchInfoModalPanel extends BaseModalPanel {
             add(acceptButton = new SimpleTextButton(this, Component.translatable("research.ui.info.accept_button"), Icons.ACCEPT) {
                 @Override
                 public void onClicked(MouseButton mouseButton) {
-
+                    ClientResearchManager manager = ResearchUtils.getManagerCast(true);
+                    NetworkManager.sendToServer(new SendCancelResearchC2S(ResearchScreen.getResearch().research.getId(), manager.getResearchData().get().getId()));
+                    ResearchScreen.Instance.infoPanel.updateStage(ResearchStage.UN_RESEARCHED);
+                    ResearchScreen.Instance.removeAnyModalPanel();
                 }
 
                 @Override
@@ -307,6 +314,7 @@ public class ResearchInfoModalPanel extends BaseModalPanel {
         }
 
         protected void updateText() {
+            if(ResearchScreen.getResearch() == null) return;
             double percent = ResearchUtils.getRefundPercent(Minecraft.getInstance().player, ResearchScreen.getResearch().research);
 
             Component component = Component.translatable("research.ui.info.cancel_research_title");

@@ -4,6 +4,7 @@ import dev.ftb.mods.ftblibrary.ui.Panel;
 import dev.ftb.mods.ftblibrary.ui.Theme;
 import dev.ftb.mods.ftblibrary.ui.Widget;
 import dev.ftb.mods.ftblibrary.ui.input.MouseButton;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.sixik.researchtree.client.render.ConnectionRenderData;
@@ -45,7 +46,28 @@ public class ResearchMovePanel extends Panel {
     }
 
     public void onResearchChange(ResourceLocation researchId, ResearchChangeType type) {
+        if(type == ResearchChangeType.CHANGE_PROGRESS)
+            updateProgressBar(researchId);
+    }
 
+    public void updateProgressBar(ResourceLocation researchId) {
+        System.out.println("Update!");
+
+
+        if(ResearchScreen.Instance == null || ResearchScreen.Instance.movePanel == null) return;
+
+        double c = ResearchScreen.Instance.movePanel.playerResearchData.getProgressResearch(researchId).map(PlayerResearchData.ResearchProgressData::getProgressPercentDouble).orElse(0D);
+        for (ResearchWidget researchWidget : researchWidgets) {
+            if (researchWidget.research.getId() == researchId) {
+                researchWidget.updateProgress(c);
+
+                ResearchInfoPanel infoPanel = ResearchScreen.Instance.infoPanel;
+
+                if (infoPanel.researchWidget != null && Objects.equals(infoPanel.researchWidget.research.getId(), researchId)) {
+                    infoPanel.researchProgressBar.setValue(c);
+                }
+            }
+        }
     }
 
     @Override

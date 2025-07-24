@@ -10,13 +10,14 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.sixik.researchtree.client.widgets.ProgressBarWidget;
 import net.sixik.researchtree.research.BaseResearch;
-import net.sixik.researchtree.research.manager.ClientResearchManager;
+import net.sixik.researchtree.research.manager.PlayerResearchData;
 import net.sixik.researchtree.utils.RenderIcon;
 import net.sixik.researchtree.utils.ResearchUtils;
 import net.sixik.sdmuilibrary.client.utils.DrawDirection;
 import net.sixik.sdmuilibrary.client.utils.renders.ShapesRenderHelper;
 
 import java.util.List;
+import java.util.Optional;
 
 public class ResearchWidget extends SimpleTextButton {
 
@@ -24,7 +25,7 @@ public class ResearchWidget extends SimpleTextButton {
 
     public BaseResearch research;
     public boolean researched;
-    protected ProgressBarWidget widget;
+    protected ProgressBarWidget progressBar;
 
     public ResearchWidget(Panel panel, BaseResearch research) {
         this(panel, Component.empty(), Icon.empty());
@@ -33,16 +34,21 @@ public class ResearchWidget extends SimpleTextButton {
 
     public ResearchWidget(Panel panel, Component text, Icon icon) {
         super(panel, text, icon);
-        widget = new ProgressBarWidget(panel);
+        progressBar = new ProgressBarWidget(panel);
     }
 
     public ResearchWidget setResearch(BaseResearch research) {
         this.research = research;
         this.title = research.getTranslate();
         this.icon = Icon.getIcon(research.getIconPath());
-        this.widget.setMaxValue(100);
-        this.widget.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, research, true));
+        this.progressBar.setMaxValue(100);
+        this.progressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, research, true));
         this.researched = ResearchScreen.Instance.movePanel.playerResearchData.containsInUnlockedResearch(research.getId());
+        return this;
+    }
+
+    public ResearchWidget updateProgress(double value) {
+        this.progressBar.setValue(value);
         return this;
     }
 
@@ -52,10 +58,9 @@ public class ResearchWidget extends SimpleTextButton {
 
     @Override
     public void drawBackground(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
-
         if(ResearchUtils.isStartResearch(Minecraft.getInstance().player, research, true)) {
             ShapesRenderHelper.drawRoundedRect(graphics, x, y, w, h, 4, ResearchScreen.DEFAULT_WIDGET_COLOR, DrawDirection.UP);
-            widget.draw(graphics, theme, x,y + h,w,8);
+            progressBar.draw(graphics, theme, x,y + h,w,8);
 
         }
         else ResearchScreen.DEFAULT_WIDGET_COLOR.drawRoundFill(graphics, x,y,w,h, 4);
@@ -64,6 +69,17 @@ public class ResearchWidget extends SimpleTextButton {
             RenderIcon.CONFIRM.draw(graphics, x + w - RESEARCHED_ICON_SIZE, y,RESEARCHED_ICON_SIZE, RESEARCHED_ICON_SIZE);
         }
 
+    }
+
+    @Override
+    public void tick() {
+        if(!researched && Minecraft.getInstance().gui.getGuiTicks() % 10 == 0) {
+            double value = ResearchUtils.getPercentResearch(Minecraft.getInstance().player, research, true);
+            this.progressBar.setValue(value);
+            if(value >= progressBar.getMaxValue())
+                this.researched = true;
+
+        }
     }
 
     @Override

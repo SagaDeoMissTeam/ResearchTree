@@ -61,7 +61,7 @@ public class ItemRequirements extends Requirements {
 
     @Override
     public void refund(Player player, BaseResearch research, double percentageOfReturn) {
-
+        SDMItemHelper.giveItems(player, itemStack, itemStack.getCount());
     }
 
     @Override

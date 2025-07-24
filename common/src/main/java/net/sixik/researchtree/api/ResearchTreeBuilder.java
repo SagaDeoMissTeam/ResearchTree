@@ -81,7 +81,7 @@ public class ResearchTreeBuilder {
         protected long researchTime = -1L;
         protected boolean researchStopping =  true;
         protected boolean shouldRenderConnection = true;
-        protected double refundPercent;
+        protected double refundPercent = -1;
 
         public ResearchBuilder(ResourceLocation researchId) {
             this(researchId, null);
@@ -90,7 +90,6 @@ public class ResearchTreeBuilder {
         public ResearchBuilder(ResourceLocation researchId, ResourceLocation iconId) {
             this.researchId = researchId;
             this.iconId = iconId;
-            this.refundPercent = ResearchTree.MOD_CONFIG.getDefaultRefundPercent();
         }
 
         @ZenCodeType.Method

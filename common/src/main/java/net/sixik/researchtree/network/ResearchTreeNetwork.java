@@ -6,6 +6,7 @@ import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.network.ask.GetAndOpenResearchScreenASK;
 import net.sixik.researchtree.network.ask.SyncAndOpenResearchScreenASK;
 import net.sixik.researchtree.network.ask.SyncResearchASK;
+import net.sixik.researchtree.network.fromClient.SendCancelResearchC2S;
 import net.sixik.researchtree.network.fromClient.SendStartResearchC2S;
 import net.sixik.researchtree.network.fromServer.*;
 import net.sixik.sdmeconomy.network.SDMEconomyNetwork;
@@ -29,6 +30,7 @@ public class ResearchTreeNetwork {
         NetworkHelper.registerS2C(SendCompleteResearchingS2C.TYPE, SendCompleteResearchingS2C.STREAM_CODEC, SendCompleteResearchingS2C::handle);
 
         NetworkHelper.registerC2S(SendStartResearchC2S.TYPE, SendStartResearchC2S.STREAM_CODEC, SendStartResearchC2S::handle);
+        NetworkHelper.registerC2S(SendCancelResearchC2S.TYPE, SendCancelResearchC2S.STREAM_CODEC, SendCancelResearchC2S::handle);
     }
 
     public static ResourceLocation nameOf(String name) {

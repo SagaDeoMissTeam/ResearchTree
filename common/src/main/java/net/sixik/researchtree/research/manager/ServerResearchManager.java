@@ -1,6 +1,7 @@
 package net.sixik.researchtree.research.manager;
 
 import dev.architectury.event.events.common.TickEvent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,7 +40,7 @@ public class ServerResearchManager extends ResearchManager {
         this.server = server;
         this.tasks = new LinkedBlockingQueue<>();
         this.executor = Executors.newSingleThreadExecutor(r -> {
-            Thread thread = new Thread(r, "ResearchManager");
+            Thread thread = new Thread(r, "ServerResearchManager");
             thread.setDaemon(true);
             return thread;
         });
@@ -50,7 +51,9 @@ public class ServerResearchManager extends ResearchManager {
             startTaskProcessing();
         else {
             if(!registered) {
-                TickEvent.SERVER_POST.register(s -> INSTANCE.tickResearchData());
+                TickEvent.SERVER_POST.register(s -> {
+                    if(INSTANCE != null)  INSTANCE.tickResearchData();
+                });
                 registered = true;
             }
         }
@@ -74,7 +77,7 @@ public class ServerResearchManager extends ResearchManager {
                     tickResearchData();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    LOGGER.info("ResearchManager thread interrupted, shutting down");
+                    LOGGER.info("ServerResearchManager thread interrupted, shutting down");
                     break;
                 } catch (Exception e) {
                     LOGGER.error("Error processing research task", e);
@@ -100,6 +103,8 @@ public class ServerResearchManager extends ResearchManager {
             Thread.currentThread().interrupt();
             LOGGER.error("Interrupted during ResearchManager shutdown", e);
         }
+
+        INSTANCE = null;
     }
 
     @Nullable
@@ -173,24 +178,6 @@ public class ServerResearchManager extends ResearchManager {
                 ret = true;
         }
         return ret;
-    }
-
-    public void addStartResearch(Player player, BaseResearch research) {
-        PlayerResearchData playerData = getOrCreatePlayerData(player);
-
-        long researchTime = research.getResearchTime();
-
-        if(researchTime == -1)
-            researchTime = ResearchTree.MOD_CONFIG.getDefaultResearchTimeMs();
-        if(researchTime <= 0) {
-            research.onResearchEnd(player);
-        } else {
-            playerData.addProgressResearch(research.getId(), research.getResearchTime());
-
-            if (player instanceof ServerPlayer serverPlayer) {
-                SendPlayerResearchDataChangeS2C.sendAddProgress(serverPlayer, research.getId(), research.getResearchTime());
-            }
-        }
     }
 
     public Optional<ServerPlayer> getPlayer(UUID player) {

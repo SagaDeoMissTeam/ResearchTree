@@ -63,16 +63,36 @@ public class ResearchInfoPanel extends Panel {
         return ResearchScreen.Instance.currentModalPanel == null && super.mouseScrolled(scroll);
     }
 
+    @Override
+    public void tick() {
+        if(researchWidget != null && !researchWidget.researched && Minecraft.getInstance().gui.getGuiTicks() % 10 == 0) {
+            researchProgressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, this.researchWidget.research, true));
+        }
+    }
+
     public void setResearch(@Nullable ResearchWidget widget) {
         this.researchWidget = widget;
+        update();
+    }
 
+    public void updateStage(ResearchStage stage) {
+        this.researchStage = stage;
+    }
+
+    public void updateStage() {
+        if(this.researchWidget == null) return;
+
+        this.researchStage = ResearchUtils.getResearchStage(Minecraft.getInstance().player, this.researchWidget.research, true);
+    }
+
+    public void update() {
         if(this.researchWidget != null) {
             this.titleLabel.setText(this.researchWidget.research.getTranslate());
 
             if(this.researchWidget.research.hasSubtitle() || ResearchScreen.isEditMode())
                 this.subtitleLabel.setText(this.researchWidget.research.getSubtitleTranslate());
 
-            researchStage = ResearchUtils.getResearchStage(Minecraft.getInstance().player, this.researchWidget.research, true);
+            updateStage();
             this.researchProgressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, this.researchWidget.research, true));
         } else {
             this.titleLabel.setText(Component.empty());
