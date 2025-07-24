@@ -120,4 +120,9 @@ public class ItemRequirements extends Requirements {
     public StreamCodec<RegistryFriendlyByteBuf, ItemRequirements> streamCodec() {
         return STREAM_CODEC;
     }
+
+    @Override
+    public String getId() {
+        return "item_requirement";
+    }
 }

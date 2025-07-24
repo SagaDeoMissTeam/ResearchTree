@@ -9,6 +9,7 @@ import net.minecraft.client.KeyMapping;
 import net.sixik.researchtree.client.ResearchScreen;
 import net.sixik.researchtree.config.ModConfig;
 import net.sixik.researchtree.network.ResearchTreeNetwork;
+import net.sixik.researchtree.network.ask.GetAndOpenResearchScreenASK;
 import net.sixik.researchtree.registers.ModRegisters;
 import org.lwjgl.glfw.GLFW;
 
@@ -39,7 +40,9 @@ public final class ResearchTree {
 
         ClientTickEvent.CLIENT_PRE.register((instance -> {
             if (KEY_SHOP.consumeClick()) {
-                new ResearchScreen().openGui();
+                ResearchTree.MOD_CONFIG.getResearchTreeId().ifPresent(s -> {
+                    new GetAndOpenResearchScreenASK(null).execute(s);
+                });
             }
         }));
     }

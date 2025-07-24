@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
 public class CraftTweakerScriptContext extends ScriptContext {
+
     public static final Logger LOGGER = CraftTweakerAPI.getLogger(ResearchTree.MODID);
 
     @Override

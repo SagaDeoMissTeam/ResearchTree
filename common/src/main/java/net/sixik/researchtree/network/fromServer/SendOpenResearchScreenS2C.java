@@ -8,20 +8,20 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.sixik.researchtree.network.ResearchTreeNetwork;
 import net.sixik.researchtree.utils.ResearchUtils;
 
-public record SendOpenResearchScreen(boolean isOpen) implements CustomPacketPayload {
+public record SendOpenResearchScreenS2C(boolean isOpen) implements CustomPacketPayload {
 
-    public static final Type<SendOpenResearchScreen> TYPE =
+    public static final Type<SendOpenResearchScreenS2C> TYPE =
             new Type<>(ResearchTreeNetwork.nameOf("send_open_research_screen"));
 
-    public static final StreamCodec<FriendlyByteBuf, SendOpenResearchScreen> STREAM_CODEC =
-            StreamCodec.composite(ByteBufCodecs.BOOL, SendOpenResearchScreen::isOpen, SendOpenResearchScreen::new);
+    public static final StreamCodec<FriendlyByteBuf, SendOpenResearchScreenS2C> STREAM_CODEC =
+            StreamCodec.composite(ByteBufCodecs.BOOL, SendOpenResearchScreenS2C::isOpen, SendOpenResearchScreenS2C::new);
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
     }
 
-    public static void handle(SendOpenResearchScreen message, NetworkManager.PacketContext context) {
+    public static void handle(SendOpenResearchScreenS2C message, NetworkManager.PacketContext context) {
         ResearchUtils.openResearchScreen(message.isOpen());
     }
 }

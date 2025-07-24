@@ -81,7 +81,7 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
     public List<UUID> syncPlayerDataWithTeammates(UUID playerGameProfile) {
         TeammatesResearch teammatesResearch = getUnlockedTeammatesResearch(playerGameProfile);
         PlayerResearchData mainPlayerData = getOrCreatePlayerData(playerGameProfile);
-        mainPlayerData.addResearch(teammatesResearch.researches);
+        mainPlayerData.addUnlockedResearch(teammatesResearch.researches);
         return teammatesResearch.teammates;
     }
 

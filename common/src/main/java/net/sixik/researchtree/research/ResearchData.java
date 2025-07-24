@@ -41,7 +41,7 @@ public class ResearchData implements FullCodecSerializer<ResearchData> {
     );
 
     protected final ResourceLocation id;
-    protected List<BaseResearch> researchList = new ArrayList<>();
+    protected List<BaseResearch> researchList;
     protected List<ResearchEvent> listeners = new ArrayList<>();
 
     public ResearchData() {

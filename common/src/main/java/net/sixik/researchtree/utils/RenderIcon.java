@@ -10,6 +10,7 @@ public interface RenderIcon {
     Icon CANCEL = getIcon("cancel");
     Icon WIREFRAME_GLOBE = getIcon("wireframe-globe");
     Icon OPEN_BOOK = getIcon("open-book");
+    Icon CONFIRM = getIcon("confirmed");
 
 
     static Icon getIcon(String id) {

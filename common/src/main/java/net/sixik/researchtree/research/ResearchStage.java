@@ -3,6 +3,6 @@ package net.sixik.researchtree.research;
 public enum ResearchStage {
     RESEARCHED,
     START_RESEARCH,
-    UNKNOWN,
+    LOCKED,
     UN_RESEARCHED
 }

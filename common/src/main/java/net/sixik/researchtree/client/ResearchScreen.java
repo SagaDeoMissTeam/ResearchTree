@@ -5,9 +5,11 @@ import dev.ftb.mods.ftblibrary.ui.Theme;
 import dev.ftb.mods.ftblibrary.ui.Widget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.sixik.researchtree.DebugConstants;
 import net.sixik.researchtree.client.render.SelectRender;
 import net.sixik.researchtree.client.widgets.BaseModalPanel;
+import net.sixik.researchtree.research.ResearchChangeType;
 import net.sixik.sdmuilibrary.client.utils.math.Vector2;
 import net.sixik.sdmuilibrary.client.utils.misc.RGBA;
 import org.jetbrains.annotations.NotNull;
@@ -40,6 +42,10 @@ public class ResearchScreen extends BaseScreen {
     protected List<SelectRender> selectRenders = new ArrayList<>();
 
     protected @Nullable BaseModalPanel currentModalPanel;
+
+    public void onResearchChange(ResourceLocation researchId, ResearchChangeType type) {
+        movePanel.onResearchChange(researchId, type);
+    }
 
 
     @Override
@@ -154,6 +160,9 @@ public class ResearchScreen extends BaseScreen {
         toolPanel.setSize(this.width / 6, UP_PANEL_HEIGHT);
         toolPanel.setPos(this.width - toolPanel.width, 0);
         toolPanel.alignWidgets();
+
+        if(this.currentModalPanel != null)
+            setModalPanel(currentModalPanel);
 
     }
 

@@ -3,7 +3,12 @@ package net.sixik.researchtree.research.manager;
 import dev.architectury.event.events.common.TickEvent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
+import net.sixik.researchtree.network.ask.SyncResearchASK;
+import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
+import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -117,6 +122,17 @@ public class ServerResearchManager extends ResearchManager {
         return Optional.ofNullable(researchesData.get(resourceId));
     }
 
+    public void addResearchData(ResearchData data) {
+        if(researchesData.containsKey(data.getId())) {
+            return;
+        }
+        researchesData.put(data.getId(), data);
+    }
+
+    public void addResearchDataWithReplace(ResearchData data) {
+        researchesData.put(data.getId(), data);
+    }
+
     public Optional<ResearchData> createResearchData() {
         return createResearchData(ResearchData.ADDITION_DEFAULT.apply(UUID.randomUUID().toString()));
     }
@@ -149,5 +165,45 @@ public class ServerResearchManager extends ResearchManager {
                 ret = true;
         }
         return ret;
+    }
+
+    public void addStartResearch(Player player, BaseResearch research) {
+        PlayerResearchData playerData = getOrCreatePlayerData(player);
+
+        long researchTime = research.getResearchTime();
+
+        if(researchTime == -1)
+            researchTime = ResearchTree.MOD_CONFIG.getDefaultResearchTimeMs();
+        if(researchTime <= 0) {
+            research.onResearchEnd(player);
+        } else {
+            playerData.addProgressResearch(research.getId(), research.getResearchTime());
+
+            if (player instanceof ServerPlayer serverPlayer) {
+                SendPlayerResearchDataChangeS2C.sendAddProgress(serverPlayer, research.getId(), research.getResearchTime());
+            }
+        }
+    }
+
+    public Optional<ServerPlayer> getPlayer(UUID player) {
+        return Optional.ofNullable(server.getPlayerList().getPlayer(player));
+    }
+
+    public Optional<BaseResearch> findResearchById(ResourceLocation researchId) {
+        for (Map.Entry<ResourceLocation, ResearchData> entry : researchesData.entrySet()) {
+            List<BaseResearch> copyLst = new ArrayList<>(entry.getValue().getResearchList());
+            for (BaseResearch baseResearch : copyLst) {
+                if(baseResearch.getId().equals(researchId)) return Optional.of(baseResearch);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public CompletableFuture<Optional<BaseResearch>> findResearchById(ResourceLocation researchId, Executor executor) {
+        return CompletableFuture.supplyAsync( () -> findResearchById(researchId), executor);
+    }
+
+    public void syncResearchDataWithAll(ResourceLocation researchDataid) {
+        new SyncResearchASK(null).startRequest(server, researchDataid);
     }
 }

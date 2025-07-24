@@ -4,6 +4,10 @@ To create your own research trees, you can use scripts for 2 mods. </br>
 
 - *There is also a game editor inside.* **[Coming Soon]**
 
+After creating the research tree, localization keys are generated for the title and for the subtitle based on the ID
+- Title: `research.'namespace'.'path'`             `research.researchtreemod.myresearch_1`
+- Subtitle: `research.'namespace'.'path'.subtitle` `research.researchtreemod.myresearch_1.subtitle`
+
 ## Crafttweaker
 
 ```ts
@@ -39,3 +43,17 @@ ResearchTreeBuilder.create()
 
 
 ## KubeJS
+
+## ContentIds
+
+The ID of the elements to add to the study using `addRequirement` and `addReward`
+
+### Requirements
+| Id               | Arguments | Description                         |
+|------------------|-----------|-------------------------------------|
+| item_requirement | ItemStack | Requirements in the form of an item |
+
+### Rewards
+| Id          | Arguments | Description                   |
+|-------------|-----------|-------------------------------|
+| item_reward | ItemStack | Reward in the form of an item |

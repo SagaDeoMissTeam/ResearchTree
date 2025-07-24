@@ -2,6 +2,7 @@ package net.sixik.researchtree.research.rewards;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.architectury.platform.Platform;
 import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.icon.ItemIcon;
 import dev.ftb.mods.ftblibrary.ui.GuiHelper;
@@ -74,5 +75,10 @@ public class ItemReward extends Reward{
         list1.forEach(list::add);
         list.add(Component.empty());
         list.add(Component.literal("Count: " + itemStack.getCount()));
+    }
+
+    @Override
+    public String getId() {
+        return "item_reward";
     }
 }

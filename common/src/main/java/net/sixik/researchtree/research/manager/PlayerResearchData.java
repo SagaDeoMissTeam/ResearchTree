@@ -8,8 +8,10 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.FullCodecSerializer;
+import net.sixik.researchtree.utils.ResearchUtils;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class PlayerResearchData implements FullCodecSerializer<PlayerResearchData> {
@@ -77,6 +79,12 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         }
     }
 
+    public boolean containsInUnlockedResearch(ResourceLocation researchId) {
+        synchronized (syncResearch) {
+            return unlockedResearch.stream().anyMatch(s -> s.equals(researchId));
+        }
+    }
+
     public ResourceLocation getUnlockedResearch(int index) {
         synchronized (syncResearch) {
             return unlockedResearch.get(index);
@@ -99,6 +107,12 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         }
     }
 
+    public boolean containsInProgress(ResourceLocation researchId) {
+        synchronized (syncProgress) {
+            return progressData.stream().anyMatch(d1 -> d1.getId().equals(researchId));
+        }
+    }
+
     public ResearchProgressData getProgressResearch(int index) {
         synchronized (syncProgress) {
             return progressData.get(index);
@@ -117,6 +131,12 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         }
     }
 
+    public Optional<ResearchProgressData> getProgressResearch(ResourceLocation researchId) {
+        synchronized (syncProgress) {
+            return progressData.stream().filter(s -> s.getId().equals(researchId)).findFirst();
+        }
+    }
+
     public int getProgressResearchSize() {
         return progressData.size();
     }
@@ -127,13 +147,7 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         }
     }
 
-    public void addResearch(ResourceLocation researchId) {
-        synchronized (syncResearch) {
-            unlockedResearch.add(researchId);
-        }
-    }
-
-    public void addResearch(Collection<ResourceLocation> researchIds) {
+    public void addUnlockedResearch(Collection<ResourceLocation> researchIds) {
         synchronized (syncResearch) {
             for (ResourceLocation researchId : researchIds) {
                 if(unlockedResearch.contains(researchId)) continue;
@@ -165,6 +179,17 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
                 if (research.isResearched()) {
                     synchronized (syncResearch) {
                         unlockedResearch.add(research.getId());
+
+                        Optional<ResearchManager> optManager = ResearchUtils.getManagerOptional(false);
+                        if(optManager.isPresent()) {
+                            ServerResearchManager manager = (ServerResearchManager) optManager.get();
+
+                            manager.getPlayer(playerId).ifPresent(player -> {
+                                manager.findResearchById(research.getId()).ifPresent(baseResearch -> {
+                                    baseResearch.onResearchEnd(player);
+                                });
+                            });
+                        }
                     }
                     iterator.remove();
                 }
@@ -211,7 +236,7 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         );
 
         private final ResourceLocation researchId;
-        private final long durationMs;
+        private long durationMs;
         private long elapsedMs;
         private boolean isPaused;
 
@@ -260,6 +285,10 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
             return durationMs;
         }
 
+        public void setDurationMs(long durationMs) {
+            this.durationMs = durationMs;
+        }
+
         public long getElapsedMs() {
             return elapsedMs;
         }
@@ -267,6 +296,15 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         public boolean isPaused() {
             return isPaused;
         }
+
+        public double getProgressPercentDouble() {
+            if (durationMs == 0) {
+                return elapsedMs > 0 ? 100.0 : 0.0;
+            }
+            return Math.min(100.0, (elapsedMs * 100.0) / durationMs);
+        }
+
+
 
         public ResearchProgressData copy() {
             return new ResearchProgressData(researchId, durationMs, elapsedMs, isPaused);

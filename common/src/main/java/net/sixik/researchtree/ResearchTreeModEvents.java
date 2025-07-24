@@ -22,9 +22,8 @@ public class ResearchTreeModEvents {
 
         PlayerEvent.PLAYER_JOIN.register(serverPlayer -> {
             SendPlayerResearchDataS2C.sendTo(serverPlayer);
-
             ServerResearchManager researchManager = ResearchUtils.getManagerCast(false);
-            researchManager.createResearchData(ResearchData.DEFAULT, DebugResearchData::new).ifPresent(data -> {
+            ResearchTree.MOD_CONFIG.getResearchTreeId().flatMap(researchManager::getResearchData).ifPresent(data -> {
                 new SyncResearchASK(null).startRequest(serverPlayer, data.getId());
             });
         });

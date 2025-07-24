@@ -7,11 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
-import net.sixik.researchtree.client.render.RenderBase;
-import net.sixik.researchtree.client.render.RenderRequirements;
-import net.sixik.researchtree.client.render.RenderRewards;
-import net.sixik.researchtree.client.render.RenderTooltip;
-import net.sixik.researchtree.client.widgets.BaseModalPanel;
+import net.sixik.researchtree.client.render.*;
 import net.sixik.researchtree.client.widgets.ProgressBarWidget;
 import net.sixik.researchtree.mixin.PanelAccessor;
 import net.sixik.researchtree.research.ResearchStage;
@@ -47,7 +43,7 @@ public class ResearchInfoPanel extends Panel {
     protected RewardPanel rewardPanel;
     protected PanelScrollBar rewardScrollPanel;
 
-    protected ResearchStage researchStage = ResearchStage.UNKNOWN;
+    protected ResearchStage researchStage = ResearchStage.LOCKED;
 
     private List<TextField> descriptionFields = new ArrayList<>();
 
@@ -76,8 +72,8 @@ public class ResearchInfoPanel extends Panel {
             if(this.researchWidget.research.hasSubtitle() || ResearchScreen.isEditMode())
                 this.subtitleLabel.setText(this.researchWidget.research.getSubtitleTranslate());
 
-            researchStage = ResearchUtils.getResearchStage(Minecraft.getInstance().player, this.researchWidget.research);
-            this.researchProgressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, this.researchWidget.research));
+            researchStage = ResearchUtils.getResearchStage(Minecraft.getInstance().player, this.researchWidget.research, true);
+            this.researchProgressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, this.researchWidget.research, true));
         } else {
             this.titleLabel.setText(Component.empty());
             this.subtitleLabel.setText(Component.empty());
@@ -191,6 +187,11 @@ public class ResearchInfoPanel extends Panel {
         add(this.startResearchButton = new SimpleTextButton(this, Component.translatable("research.ui.info.research_button"), RenderIcon.OPEN_BOOK) {
             @Override
             public void onClicked(MouseButton mouseButton) {
+                if(ResearchUtils.canStartResearch(Minecraft.getInstance().player, researchWidget.research, true)){
+                    ResearchScreen.Instance.setModalPanel(new ResearchInfoModalPanel.StartResearch(getGui()));
+                } else {
+                    ResearchScreen.Instance.setModalPanel(new ResearchInfoModalPanel.CantStartResearch(getGui()));
+                }
 
             }
 
@@ -326,106 +327,16 @@ public class ResearchInfoPanel extends Panel {
         }
     }
 
-    protected class RewardPanel extends Panel {
-
-        protected RenderRequirements requirements;
-        protected RenderRewards rewards;
-        private PanelAccessor accessor;
-
-        private int contentHeightCache;
+    public class RewardPanel extends BaseRenderReward {
 
         public RewardPanel(Panel panel) {
             super(panel);
-            this.accessor = (PanelAccessor) this;
-
         }
 
-        @Override
-        public void addWidgets() {
-        }
-
-        @Override
-        public void alignWidgets() {
-
-        }
-
-        @Override
-        public boolean getOnlyRenderWidgetsInside() {
-            return false;
-        }
 
         public void setRenders(RenderRequirements requirements, RenderRewards rewards) {
-            this.requirements = requirements;
-            this.rewards = rewards;
-
-
-            contentHeightCache = this.requirements.getSize().y
-                    + this.rewards.getSize().y
-                    + Minecraft.getInstance().font.lineHeight * 3 + 4;
-
+            super.setRenders(requirements, rewards);
             ResearchInfoPanel.this.rewardScrollPanel.setValue(0);
-        }
-
-        @Override
-        public int getContentHeight() {
-            return contentHeightCache;
-        }
-
-        @Override
-        public double getScrollX() {
-            return super.getScrollX();
-        }
-
-        @Override
-        public void drawBackground(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
-            ResearchScreen.DEFAULT_BACKGROUND.drawRoundFill(graphics, x, y, w, h, 4);
-            setOffset(true);
-            int currentY = y + 2;
-            boolean isOver = isMouseOver();
-
-            // Храним данные для отложенного рендеринга тултипов
-            record TooltipData(RenderBase<?> renderable, int mouseX, int mouseY, int xOffset, int yOffset, int yPos, RenderTooltip tooltip) {}
-            List<TooltipData> tooltips = new ArrayList<>(2);
-
-            // Рендеринг requirements
-            if (requirements != null && !requirements.renderData.isEmpty()) {
-                GLRenderHelper.enableScissor(graphics, x, y, w, h);
-                String text = I18n.get("research.ui.info.requirements");
-                int textW = theme.getStringWidth(text);
-                int textPos = x + (w - textW) / 2;
-                ResearchInfoPanel.LINE_COLOR.draw(graphics, textPos - 2, currentY - 2 + accessor.getOffsetY(), textW + 2, theme.getFontHeight() + 2);
-                theme.drawString(graphics, text, textPos, currentY + accessor.getOffsetY());
-                currentY += theme.getFontHeight() + 2;
-                requirements.draw(graphics, 0, currentY, 0, accessor.getOffsetY());
-                GLRenderHelper.disableScissor(graphics);
-                if (isOver) {
-                    tooltips.add(new TooltipData(requirements, getMouseX(), getMouseY(), 0, accessor.getOffsetY(), currentY, new RenderTooltip(200, 100)));
-                }
-                currentY += requirements.getSize().y + 4;
-            }
-
-            // Рендеринг rewards
-            if (rewards != null && !rewards.renderData.isEmpty()) {
-                GLRenderHelper.enableScissor(graphics, x, y, w, h);
-                String text = I18n.get("research.ui.info.rewards");
-                int textW = theme.getStringWidth(text);
-                int textPos = x + (w - textW) / 2;
-                ResearchInfoPanel.LINE_COLOR.draw(graphics, textPos - 2, currentY - 2 + accessor.getOffsetY(), textW + 2, theme.getFontHeight() + 2);
-                theme.drawString(graphics, text, textPos, currentY + accessor.getOffsetY());
-                currentY += theme.getFontHeight() + 2;
-                rewards.draw(graphics, 0, currentY, 0, accessor.getOffsetY());
-                GLRenderHelper.disableScissor(graphics);
-                if (isOver) {
-                    tooltips.add(new TooltipData(rewards, getMouseX(), getMouseY(), 0, accessor.getOffsetY(), currentY, new RenderTooltip(200, 100)));
-                }
-            }
-
-            // Отложенный рендеринг тултипов после всех операций с scissor
-            for (TooltipData tooltip : tooltips) {
-                tooltip.renderable.drawTooltip(graphics, tooltip.mouseX, tooltip.mouseY, tooltip.xOffset, tooltip.yPos, tooltip.xOffset, tooltip.yOffset, tooltip.tooltip);
-            }
-
-            setOffset(false);
         }
     }
 }

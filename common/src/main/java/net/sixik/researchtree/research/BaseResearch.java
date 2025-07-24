@@ -9,13 +9,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.FullCodecSerializer;
 import net.sixik.researchtree.client.ClientUtils;
+import net.sixik.researchtree.network.fromServer.SendCompleteResearchingS2C;
+import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
 import net.sixik.researchtree.registers.ModRegisters;
-import net.sixik.researchtree.research.requirements.ItemRequirements;
+import net.sixik.researchtree.research.manager.PlayerResearchData;
+import net.sixik.researchtree.research.manager.ResearchManager;
+import net.sixik.researchtree.research.manager.ServerResearchManager;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
 import net.sixik.researchtree.utils.NbtUtils;
@@ -275,14 +279,55 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         return refundPercent;
     }
 
-    public void onResearchStart(Player player) {}
+    public void onResearchStart(Player player) {
+        ServerResearchManager manager = ResearchUtils.getManagerCast(false);
+        if(!ResearchUtils.canStartResearch(player, this, manager)) return;
 
-    public void onResearchTick(Player player, long tick, long tickEnd) {}
+        List<Requirements> completed = new ArrayList<>();
 
-    public void onResearchEnd(Player player) {}
+        for (Requirements requirement : getRequirements()) {
+            if(requirement.execute(player, this))
+                completed.add(requirement);
+            else {
+                for (Requirements requirements1 : completed) {
+                    requirements1.refund(player, this, 100);
+                }
+                return;
+            }
+        }
+
+        manager.addStartResearch(player, this);
+    }
+
+    public void onResearchEnd(Player player) {
+        ServerResearchManager manager = ResearchUtils.getManagerCast(false);
+        manager.getPlayerDataOptional(player).ifPresent(playerData -> {
+            if(!playerData.containsInUnlockedResearch(this.getId())) {
+                playerData.addUnlockedResearch(this.getId());
+            }
+
+            if(playerData.containsInProgress(this.getId()))
+                playerData.removeProgressResearch(this.getId());
+
+            for (Reward reward : getRewards()) {
+                reward.giveReward(player, this);
+            }
+
+            sendNotify(player);
+            SendCompleteResearchingS2C.sendTo((ServerPlayer) player, this.getId());
+        });
+    }
+
+    public void sendNotify(Player player) {
+        player.sendSystemMessage(Component.literal("Research Completed!"));
+    }
 
     public boolean canResearch(Player player) {
         return true;
+    }
+
+    public boolean isLocked(Player player) {
+        return false;
     }
 
     @Override

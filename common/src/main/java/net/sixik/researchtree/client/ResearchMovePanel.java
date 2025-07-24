@@ -1,18 +1,19 @@
 package net.sixik.researchtree.client;
 
-import dev.ftb.mods.ftblibrary.ui.GuiHelper;
 import dev.ftb.mods.ftblibrary.ui.Panel;
 import dev.ftb.mods.ftblibrary.ui.Theme;
 import dev.ftb.mods.ftblibrary.ui.Widget;
 import dev.ftb.mods.ftblibrary.ui.input.MouseButton;
 import net.minecraft.client.gui.GuiGraphics;
-import net.sixik.researchtree.client.debug.ClientDebugUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.sixik.researchtree.client.render.ConnectionRenderData;
 import net.sixik.researchtree.client.render.SelectRender;
 import net.sixik.researchtree.mixin.PanelAccessor;
 import net.sixik.researchtree.research.BaseResearch;
-import net.sixik.researchtree.research.DebugResearchData;
+import net.sixik.researchtree.research.ResearchChangeType;
 import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.research.manager.ClientResearchManager;
+import net.sixik.researchtree.research.manager.PlayerResearchData;
 import net.sixik.researchtree.utils.ResearchUtils;
 import net.sixik.sdmuilibrary.client.utils.math.Vector2;
 import net.sixik.sdmuilibrary.client.utils.renders.GLRenderHelper;
@@ -33,17 +34,24 @@ public class ResearchMovePanel extends Panel {
     protected List<ResearchWidget> researchWidgets = new ArrayList<>();
     protected List<ConnectionRenderData> renderData = new ArrayList<>();
     protected ResearchData researchData;
+    protected PlayerResearchData playerResearchData;
 
     public ResearchMovePanel(Panel panel) {
         super(panel);
-        this.researchData = ((ClientResearchManager) ResearchUtils.getManagerCast(true))
-                .getResearchData().get();
+        ClientResearchManager manager = ResearchUtils.getManagerCast(true);
+
+        this.researchData = manager.getResearchData().get();
+        this.playerResearchData = manager.getPlayerData();
     }
 
+    public void onResearchChange(ResourceLocation researchId, ResearchChangeType type) {
+
+    }
 
     @Override
     public void addWidgets() {
         for (BaseResearch research : researchData.getResearchList()) {
+            if(research == null) continue;
             ResearchWidget widget = new ResearchWidget(this, research);
             widget.setPosAndSize(0,0, 100, 20);
             add(widget);
@@ -51,7 +59,6 @@ public class ResearchMovePanel extends Panel {
 
         boundsDirty = true;
         researchWidgets = getWidgets().stream().filter(w -> w instanceof ResearchWidget).map(v -> (ResearchWidget)v).toList();
-//        renderData.add(new ConnectionRenderData(researchWidgets.get(0)));
     }
 
     @Override

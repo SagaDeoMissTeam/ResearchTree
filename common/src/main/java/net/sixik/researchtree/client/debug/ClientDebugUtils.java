@@ -4,6 +4,7 @@ import dev.architectury.platform.Platform;
 import dev.ftb.mods.ftblibrary.ui.Panel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
@@ -19,6 +20,15 @@ import java.util.List;
 
 public class ClientDebugUtils {
 
+    public static void log(String message) {
+        if(!Platform.isDevelopmentEnvironment()) return;
+        Minecraft.getInstance().player.sendSystemMessage(Component.literal(message));
+    }
+
+    public static void log(String message, Object... args) {
+        if(!Platform.isDevelopmentEnvironment()) return;
+        Minecraft.getInstance().player.sendSystemMessage(Component.literal(String.format(message, args)));
+    }
 
     public static void createDebugWidgets(Panel panel) {
         if(!Platform.isDevelopmentEnvironment()) {

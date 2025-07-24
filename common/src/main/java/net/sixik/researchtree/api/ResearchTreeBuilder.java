@@ -9,6 +9,7 @@ import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.research.manager.ClientResearchManager;
+import net.sixik.researchtree.research.manager.ServerResearchManager;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
 import net.sixik.researchtree.utils.ResearchUtils;
@@ -54,10 +55,14 @@ public class ResearchTreeBuilder {
             researchData.addResearch(researchBuilder.complete());
         }
 
-        System.out.println("Research Data build!");
+        ServerResearchManager manager = ResearchUtils.getManagerCast(false);
+        manager.addResearchDataWithReplace(researchData);
 
-        ClientResearchManager researchManager = ResearchUtils.getManagerCast(true);
-        researchManager.setResearchData(researchData);
+        ResearchTree.MOD_CONFIG.getResearchTreeId().ifPresent(treeId -> {
+            if(treeId == researchData.getId())
+                manager.syncResearchDataWithAll(treeId);
+
+        });
     }
 
     @ZenCodeType.Method("create")
