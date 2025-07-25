@@ -46,28 +46,13 @@ public class ResearchMovePanel extends Panel {
     }
 
     public void onResearchChange(ResourceLocation researchId, ResearchChangeType type) {
-        if(type == ResearchChangeType.CHANGE_PROGRESS)
-            updateProgressBar(researchId);
+        if(type == ResearchChangeType.ADD_RESEARCH) {
+            findResearchWidget(researchId).ifPresent(rs -> ResearchScreen.Instance.onResearchComplete(rs));
+        }
     }
 
-    public void updateProgressBar(ResourceLocation researchId) {
-        System.out.println("Update!");
-
-
-        if(ResearchScreen.Instance == null || ResearchScreen.Instance.movePanel == null) return;
-
-        double c = ResearchScreen.Instance.movePanel.playerResearchData.getProgressResearch(researchId).map(PlayerResearchData.ResearchProgressData::getProgressPercentDouble).orElse(0D);
-        for (ResearchWidget researchWidget : researchWidgets) {
-            if (researchWidget.research.getId() == researchId) {
-                researchWidget.updateProgress(c);
-
-                ResearchInfoPanel infoPanel = ResearchScreen.Instance.infoPanel;
-
-                if (infoPanel.researchWidget != null && Objects.equals(infoPanel.researchWidget.research.getId(), researchId)) {
-                    infoPanel.researchProgressBar.setValue(c);
-                }
-            }
-        }
+    public Optional<ResearchWidget> findResearchWidget(ResourceLocation researchId) {
+        return researchWidgets.stream().filter(s -> s.research.getId().equals(researchId)).findFirst();
     }
 
     @Override
@@ -261,39 +246,54 @@ public class ResearchMovePanel extends Panel {
      */
     public void focusOnResearch(int index) {
         if (index < 0 || index >= researchWidgets.size()) {
-            System.err.println("Invalid research index: " + index);
             return;
         }
 
         if (getParent() == null) {
-            System.err.println("Parent panel is null");
             return;
+        }
+
+        if (boundsDirty) {
+            updateBounds();
         }
 
         ResearchWidget targetWidget = researchWidgets.get(index);
         int parentWidth = getParent().getWidth();
         int parentHeight = getParent().getHeight();
 
-        // Вычисляем центр виджета
+        // Вычисляем центр виджета относительно его исходной позиции
         int widgetCenterX = targetWidget.posX + targetWidget.getWidth() / 2;
         int widgetCenterY = targetWidget.posY + targetWidget.getHeight() / 2;
 
         // Вычисляем смещение, чтобы центр виджета совпал с центром области просмотра
-        widgetOffsetX = (parentWidth / 2) - widgetCenterX;
-        widgetOffsetY = (parentHeight / 2) - widgetCenterY;
+        widgetOffsetX = parentWidth / 2 - widgetCenterX;
+        widgetOffsetY = parentHeight / 2 - widgetCenterY;
 
-        // Применяем ограничения, чтобы содержимое не выходило за границы
-        widgetOffsetX = Math.min(0 - minX, Math.max(parentWidth - maxX, widgetOffsetX));
-        widgetOffsetY = Math.min(parentHeight - minY, Math.max(0 - maxY, widgetOffsetY));
 
-        boundsDirty = true; // Требуется обновление границ
+        int contentWidth = maxX - minX;
+        int contentHeight = maxY - minY;
+
+        if (contentWidth < parentWidth) {
+            // Если содержимое меньше области просмотра, не ограничиваем смещение по X
+            // Это позволяет центрировать небольшие виджеты
+        } else {
+            widgetOffsetX = Math.min(-minX, Math.max(parentWidth - maxX, widgetOffsetX));
+        }
+
+        if (contentHeight < parentHeight) {
+        } else {
+            widgetOffsetY = Math.min(-minY, Math.max(parentHeight - maxY, widgetOffsetY));
+        }
+
+        setOffset(true);
+        boundsDirty = true;
     }
 
     /**
-     * Располагает виджеты на основе их зависимостей.
-     * - Исследования без родителей — в столбце 0 (START_POS_X).
-     * - Исследования с родителями — в столбце START_POS_X + SPACE_X * уровень, где уровень — максимальная глубина родителей + 1.
-     * - Исследования с shouldRenderConnection = false — в столбце, следующем за максимальным столбцом родителей.
+     * Располагает виджеты на основе их зависимостей. </br>
+     * - Исследования без родителей — в столбце 0 (START_POS_X). </br>
+     * - Исследования с родителями — в столбце START_POS_X + SPACE_X * уровень, где уровень — максимальная глубина родителей + 1. </br>
+     * - Исследования с shouldRenderConnection = false — в столбце, следующем за максимальным столбцом родителей. </br>
      */
     protected void calculatePosition(List<ResearchWidget> widgets) {
         if (widgets.isEmpty()) return;

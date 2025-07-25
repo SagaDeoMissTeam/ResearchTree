@@ -32,6 +32,7 @@ public class ClientResearchManager extends ResearchManager{
     private final ExecutorService executor;
 
     protected ClientResearchManager() {
+        super(LOGGER);
         INSTANCE = this;
         this.executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "ClientResearchManager"));
 

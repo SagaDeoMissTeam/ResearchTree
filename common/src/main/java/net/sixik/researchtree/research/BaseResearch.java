@@ -65,6 +65,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     public boolean researchStopping = true;
     public long researchTime = -1L;
     public double refundPercent = -1;
+    protected int countParentsToResearch = 0;
 
     private final String cachedTranslate;
     private HashSet<Requirements> cachedRequirements = new HashSet<>();
@@ -187,6 +188,14 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
 
     public Component getDescriptionTranslate() {
         return Component.translatable(cachedTranslate + ".description");
+    }
+
+    public int getCountParentsToResearch() {
+        return Math.max(countParentsToResearch, getParentResearch().size());
+    }
+
+    public void setCountParentsToResearch(int countParentsToResearch) {
+        this.countParentsToResearch = countParentsToResearch;
     }
 
     public boolean hasSubtitle() {
@@ -333,7 +342,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         manager.getPlayerDataOptional(player).ifPresent(playerData -> {
             if(!playerData.containsInUnlockedResearch(this.getId())) {
                 playerData.addUnlockedResearch(this.getId());
-            }
+            } else return;
 
             if(playerData.containsInProgress(this.getId()))
                 playerData.removeProgressResearch(this.getId());
@@ -390,6 +399,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         nbt.putDouble("refund_dat", refundPercent);
         nbt.putLong("researchTime", researchTime);
         nbt.putBoolean("researchStopping", researchStopping);
+        nbt.putInt("countParentsToResearch", countParentsToResearch);
 
         return nbt;
     }
@@ -407,6 +417,8 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
             researchTime = nbt.getLong("researchTime");
         if(nbt.contains("researchStopping"))
             researchStopping = nbt.getBoolean("researchStopping");
+        if(nbt.contains("countParentsToResearch"))
+            countParentsToResearch = nbt.getInt("countParentsToResearch");
 
         NbtUtils.getList(nbt, REQUIREMENTS_KEY, tag -> {
             CompoundTag d1 = (CompoundTag) (tag);

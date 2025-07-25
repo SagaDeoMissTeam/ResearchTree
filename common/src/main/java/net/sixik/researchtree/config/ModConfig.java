@@ -53,12 +53,12 @@ public class ModConfig {
         subConfig = config.addGroup("ServerSettings");
         researchTreeId = subConfig.addString("ResearchTreeId", "");
         researchTreeId.comment("The indicator of the research tree that will be opened by default when you press a key or a button in the inventory.\nIf the value is empty, then nothing will happen.");
+        enableKeyBinding = subConfig.addBoolean("KeyBinding", true);
+        enableKeyBinding.comment("The hotkey for opening the research tree");
 
         subConfig = config.addGroup("ClientSettings");
         enableInventoryButton = subConfig.addBoolean("InventoryButton", true);
         enableInventoryButton.comment("Displays a button to open the research tree in the inventory");
-        enableKeyBinding = subConfig.addBoolean("KeyBinding", true);
-        enableKeyBinding.comment("The hotkey for opening the research tree");
 
         return config;
     }

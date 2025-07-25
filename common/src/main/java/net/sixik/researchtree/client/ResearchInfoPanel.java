@@ -35,6 +35,7 @@ public class ResearchInfoPanel extends Panel {
     protected ProgressBarWidget researchProgressBar;
     protected Button stopResearchButton;
 
+    protected TextField researchedLabel;
     protected TextField titleLabel;
     protected TextField subtitleLabel;
     protected DescriptionPanel descriptionPanel;
@@ -47,10 +48,13 @@ public class ResearchInfoPanel extends Panel {
 
     private List<TextField> descriptionFields = new ArrayList<>();
 
-
     public ResearchInfoPanel(Panel panel) {
         super(panel);
         setOnlyRenderWidgetsInside(false);
+    }
+
+    public void updateProgressBar(double value) {
+        researchProgressBar.setValue(value);
     }
 
     @Override
@@ -65,8 +69,8 @@ public class ResearchInfoPanel extends Panel {
 
     @Override
     public void tick() {
-        if(researchWidget != null && !researchWidget.researched && Minecraft.getInstance().gui.getGuiTicks() % 10 == 0) {
-            researchProgressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, this.researchWidget.research, true));
+        if(researchWidget != null && !researchWidget.researched && researchWidget.canResearch && Minecraft.getInstance().gui.getGuiTicks() % 10 == 0) {
+            updateProgressBar(researchWidget.progressBar.getValue());
         }
     }
 
@@ -154,6 +158,8 @@ public class ResearchInfoPanel extends Panel {
 
         this.stopResearchButton.setX((this.width - this.stopResearchButton.width) / 2);
         this.stopResearchButton.setY(this.height - this.stopResearchButton.height - 1);
+        this.researchedLabel.setX((this.width - this.researchedLabel.width) / 2);
+        this.researchedLabel.setY(this.height - this.researchedLabel.height * 2);
     }
 
     @Override
@@ -165,6 +171,14 @@ public class ResearchInfoPanel extends Panel {
                 return researchWidget.research.hasSubtitle() || ResearchScreen.isEditMode();
             }
         });
+
+        add(this.researchedLabel = new TextField(this) {
+            @Override
+            public boolean shouldDraw() {
+                return researchWidget != null && researchWidget.researched;
+            }
+        });
+        researchedLabel.setText(Component.translatable("research.ui.info.researched_label"));
 
         add(this.descriptionPanel = new DescriptionPanel(this));
         add(this.descriptionScrollPanel = new PanelScrollBar(this, descriptionPanel) {
@@ -212,7 +226,6 @@ public class ResearchInfoPanel extends Panel {
                 } else {
                     ResearchScreen.Instance.setModalPanel(new ResearchInfoModalPanel.CantStartResearch(getGui()));
                 }
-
             }
 
             @Override
@@ -222,7 +235,7 @@ public class ResearchInfoPanel extends Panel {
 
             @Override
             public boolean shouldDraw() {
-                return researchStage == ResearchStage.UN_RESEARCHED;
+                return researchWidget.canResearch && researchStage == ResearchStage.UN_RESEARCHED;
             }
 
             @Override

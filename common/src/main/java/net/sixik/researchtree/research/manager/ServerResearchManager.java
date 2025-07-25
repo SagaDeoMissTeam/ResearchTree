@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.storage.LevelResource;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.ResearchTreeBuilder;
 import net.sixik.researchtree.network.ask.SyncResearchASK;
@@ -15,6 +16,7 @@ import net.sixik.researchtree.research.ResearchData;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import oshi.util.tuples.Pair;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -35,8 +37,10 @@ public class ServerResearchManager extends ResearchManager {
     private final BlockingQueue<Runnable> tasks;
 
     protected ConcurrentHashMap<ResourceLocation, ResearchData> researchesData;
+    protected CopyOnWriteArrayList<PlayerResearchData.PlayerOfflineData> offlineData = new CopyOnWriteArrayList<>();
 
     public ServerResearchManager(MinecraftServer server) {
+        super(LOGGER);
         this.server = server;
         this.tasks = new LinkedBlockingQueue<>();
         this.executor = Executors.newSingleThreadExecutor(r -> {
@@ -44,6 +48,7 @@ public class ServerResearchManager extends ResearchManager {
             thread.setDaemon(true);
             return thread;
         });
+
         this.researchesData = new ConcurrentHashMap<>();
         INSTANCE = this;
 
@@ -54,9 +59,17 @@ public class ServerResearchManager extends ResearchManager {
                 TickEvent.SERVER_POST.register(s -> {
                     if(INSTANCE != null)  INSTANCE.tickResearchData();
                 });
+
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    if(INSTANCE != null)
+                        INSTANCE.savePlayerData(server.getWorldPath(LevelResource.ROOT).resolve("research_tree"), "player_data.nbt");
+                }));
+
                 registered = true;
             }
         }
+
+        loadPlayerData(server.getWorldPath(LevelResource.ROOT).resolve("research_tree"), "player_data.nbt");
     }
 
     private void startTaskProcessing() {
@@ -103,6 +116,7 @@ public class ServerResearchManager extends ResearchManager {
             Thread.currentThread().interrupt();
             LOGGER.error("Interrupted during ResearchManager shutdown", e);
         }
+        savePlayerData(server.getWorldPath(LevelResource.ROOT).resolve("research_tree"), "player_data.nbt");
 
         INSTANCE = null;
     }
@@ -131,8 +145,8 @@ public class ServerResearchManager extends ResearchManager {
         return INSTANCE;
     }
 
-    public Optional<ResearchData> getResearchData(ResourceLocation resourceId) {
-        return Optional.ofNullable(researchesData.get(resourceId));
+    public Optional<ResearchData> getResearchData(ResourceLocation researchDataId) {
+        return Optional.ofNullable(researchesData.get(researchDataId));
     }
 
     public void addResearchData(ResearchData data) {
@@ -194,11 +208,55 @@ public class ServerResearchManager extends ResearchManager {
         return Optional.empty();
     }
 
+    public Optional<Pair<ResearchData, BaseResearch>> findResearchAndDataById(ResourceLocation researchId) {
+        for (Map.Entry<ResourceLocation, ResearchData> entry : researchesData.entrySet()) {
+            List<BaseResearch> copyLst = new ArrayList<>(entry.getValue().getResearchList());
+            for (BaseResearch baseResearch : copyLst) {
+                if(baseResearch.getId().equals(researchId)) return Optional.of(new Pair<>(entry.getValue(), baseResearch));
+            }
+        }
+        return Optional.empty();
+    }
+
+    public List<BaseResearch> getAllResearches(ResourceLocation researchDataId) {
+        return researchesData.getOrDefault(researchDataId, new ResearchData()).getResearchList().stream().toList();
+    }
+
+    public List<ResearchData> getAllResearchesData() {
+        return researchesData.values().stream().toList();
+    }
+
+    public List<BaseResearch> getAllResearches() {
+        List<BaseResearch> researchIds = new ArrayList<>();
+        for (Map.Entry<ResourceLocation, ResearchData> entry : researchesData.entrySet()) {
+            researchIds.addAll(entry.getValue().getResearchList());
+        }
+        return researchIds;
+    }
+
     public CompletableFuture<Optional<BaseResearch>> findResearchById(ResourceLocation researchId, Executor executor) {
         return CompletableFuture.supplyAsync( () -> findResearchById(researchId), executor);
     }
 
     public void syncResearchDataWithAll(ResourceLocation researchDataid) {
         new SyncResearchASK(null).startRequest(server, researchDataid);
+    }
+
+    public void addOfflineData(UUID playerId, ResourceLocation researchDataId, ResourceLocation researchId) {
+        offlineData.stream().filter(s -> s.getPlayerOwnerId().equals(playerId)).findFirst().ifPresent(data -> {
+            data.addResearchData(researchDataId, researchId);
+        });
+    }
+
+    public void removeOfflineData(UUID playerId, ResourceLocation researchDataId, ResourceLocation researchId) {
+        offlineData.stream().filter(s -> s.getPlayerOwnerId().equals(playerId)).findFirst().ifPresent(data -> {
+            data.removeResearchData(researchDataId, researchId);
+        });
+    }
+
+    public void executeOfflineData(Player player) {
+        offlineData.stream().filter(s -> s.getPlayerOwnerId().equals(player.getGameProfile().getId())).findFirst().ifPresent(data -> {
+            data.execute(player);
+        });
     }
 }

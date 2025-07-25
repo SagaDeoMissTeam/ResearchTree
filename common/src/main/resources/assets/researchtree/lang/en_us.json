@@ -9,6 +9,7 @@
   "research.ui.info.close_button" : "Close",
   "research.ui.info.cancel_button" : "Cancel",
   "research.ui.info.accept_button" : "Accept",
+  "research.ui.info.researched_label" : "Researched!",
   "research.ui.info.start_research_title" : "After starting the study, you will pay with the following requirements",
   "research.ui.info.cant_start_research_title" : "You cannot start the research because you have not fulfilled the following requirements",
   "research.ui.info.cancel_research_title" : "Do you really want to cancel the study?",

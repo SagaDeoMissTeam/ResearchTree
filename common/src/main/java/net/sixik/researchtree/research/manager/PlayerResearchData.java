@@ -6,14 +6,19 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.FullCodecSerializer;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
+import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchChangeType;
+import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.utils.ResearchUtils;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 
@@ -36,6 +41,8 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
     protected final UUID playerId;
     protected final List<ResourceLocation> unlockedResearch;
     protected final List<ResearchProgressData> progressData;
+    protected volatile boolean playerOnline = true;
+
 
     protected final Object syncResearch = new Object();
     protected final Object syncProgress = new Object();
@@ -47,8 +54,8 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
 
     public PlayerResearchData(UUID playerId, List<ResourceLocation> unlockedResearch, List<ResearchProgressData> progressData) {
         this.playerId = playerId;
-        this.unlockedResearch = unlockedResearch;
-        this.progressData = progressData;
+        this.unlockedResearch = new ArrayList<>(unlockedResearch);
+        this.progressData = new ArrayList<>(progressData);
     }
 
     protected PlayerResearchData(String playerId, List<ResourceLocation> resourceLocations, List<ResearchProgressData> researchProgressData) {
@@ -69,6 +76,22 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
 
     protected List<ResearchProgressData> getProgressData() {
         return progressData;
+    }
+
+    public void updatePlayerOnline(boolean value) {
+        this.playerOnline = value;
+    }
+
+    public void clearResearches() {
+        synchronized (syncResearch) {
+            unlockedResearch.clear();
+        }
+    }
+
+    public void clearProgress() {
+        synchronized (syncProgress) {
+            progressData.clear();
+        }
     }
 
     public void addListener(Event event) {
@@ -196,10 +219,14 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
                         if(optManager.isPresent()) {
                             ServerResearchManager manager = (ServerResearchManager) optManager.get();
 
-                            manager.getPlayer(playerId).ifPresent(player -> {
-                                manager.findResearchById(research.getId()).ifPresent(baseResearch -> {
-                                    baseResearch.onResearchEnd(player);
-                                });
+                            var playerOpt = manager.getPlayer(playerId);
+
+                            manager.findResearchAndDataById(research.getId()).ifPresent(findData -> {
+                                if(playerOpt.isEmpty()) {
+                                    manager.addOfflineData(playerId, findData.getA().getId(), findData.getB().getId());
+                                } else {
+                                    playerOpt.ifPresent(findData.getB()::onResearchEnd);
+                                }
                             });
                         }
                     }
@@ -330,6 +357,89 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         @Override
         public StreamCodec<FriendlyByteBuf, ResearchProgressData> streamCodec() {
             return STREAM_CODEC;
+        }
+    }
+
+    public static class PlayerOfflineData implements FullCodecSerializer<PlayerOfflineData> {
+
+        private static final Codec<Map<ResourceLocation, List<ResourceLocation>>> MAP_CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        ResourceLocation.CODEC.listOf().fieldOf("keys").forGetter(s -> s.keySet().stream().toList()),
+                        ResourceLocation.CODEC.listOf().listOf().fieldOf("values").forGetter(s -> s.values().stream().toList())
+                ).apply(instance, (s1, s2) -> {
+                    HashMap<ResourceLocation, List<ResourceLocation>> map = new HashMap<>();
+                    for (int i = 0; i < s1.size(); i++) {
+                        map.put(s1.get(i), s2.get(i));
+                    }
+                    return map;
+                }));
+
+        public static final Codec<PlayerOfflineData> CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        Codec.STRING.fieldOf("ownerId").forGetter(s -> s.getPlayerOwnerId().toString()),
+                        MAP_CODEC.fieldOf("unlockedResearches").forGetter(PlayerOfflineData::getUnlockedResearches)
+                ).apply(instance, PlayerOfflineData::new));
+
+        private final UUID playerOwnerId;
+        private final ConcurrentHashMap<ResourceLocation, List<ResourceLocation>> unlockedResearches = new ConcurrentHashMap<>();
+
+        protected PlayerOfflineData(String playerOwnerId, Map<ResourceLocation, List<ResourceLocation>> map) {
+            this(UUID.fromString(playerOwnerId), map);
+        }
+
+        public PlayerOfflineData(UUID playerOwnerId, Map<ResourceLocation, List<ResourceLocation>> map) {
+            this.playerOwnerId = playerOwnerId;
+            this.unlockedResearches.putAll(map);
+        }
+
+        protected ConcurrentHashMap<ResourceLocation, List<ResourceLocation>> getUnlockedResearches() {
+            return unlockedResearches;
+        }
+
+        public void addResearchData(ResourceLocation researchDataId, ResourceLocation researchId) {
+            unlockedResearches.computeIfAbsent(researchDataId, s -> new ArrayList<>()).add(researchDataId);
+        }
+
+        public boolean removeResearchData(ResourceLocation researchDataId, ResourceLocation researchId) {
+            return unlockedResearches.getOrDefault(researchDataId, new ArrayList<>()).removeIf(s -> s.equals(researchId));
+        }
+
+        public void execute(Player player) {
+            ServerResearchManager manager = ResearchUtils.getManagerCast(false);
+
+            record Data(ResourceLocation id, List<ResourceLocation> resear) {}
+
+            List<Data> researchData = new ArrayList<>();
+
+            for (Map.Entry<ResourceLocation, List<ResourceLocation>> entry : this.unlockedResearches.entrySet()) {
+                manager.getResearchData(entry.getKey()).ifPresent(data -> {
+                    List<BaseResearch> res = data.findResearches(entry.getValue());
+                    Data data1 = new Data(entry.getKey(), new ArrayList<>());
+
+                    for (BaseResearch research : res) {
+                        research.onResearchEnd(player);
+                        data1.resear().add(research.getId());
+                    }
+                    researchData.add(data1);
+                });
+            }
+
+            if(!researchData.isEmpty())
+                researchData.forEach(s -> s.resear.forEach(s1 -> removeResearchData(s.id, s1)));
+        }
+
+        public UUID getPlayerOwnerId() {
+            return playerOwnerId;
+        }
+
+        @Override
+        public Codec<PlayerOfflineData> codec() {
+            return CODEC;
+        }
+
+        @Override
+        public StreamCodec<FriendlyByteBuf, PlayerOfflineData> streamCodec() {
+            throw new NotImplementedException();
         }
     }
 

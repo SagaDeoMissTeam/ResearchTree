@@ -10,6 +10,8 @@ import net.sixik.researchtree.DebugConstants;
 import net.sixik.researchtree.client.render.SelectRender;
 import net.sixik.researchtree.client.widgets.BaseModalPanel;
 import net.sixik.researchtree.research.ResearchChangeType;
+import net.sixik.researchtree.research.manager.ClientResearchManager;
+import net.sixik.researchtree.utils.ResearchUtils;
 import net.sixik.sdmuilibrary.client.utils.math.Vector2;
 import net.sixik.sdmuilibrary.client.utils.misc.RGBA;
 import org.jetbrains.annotations.NotNull;
@@ -43,9 +45,19 @@ public class ResearchScreen extends BaseScreen {
     protected @Nullable BaseModalPanel currentModalPanel;
 
     public void onResearchChange(ResourceLocation researchId, ResearchChangeType type) {
-        movePanel.onResearchChange(researchId, type);
+        this.movePanel.onResearchChange(researchId, type);
     }
 
+    public void onResearchComplete(ResearchWidget widget) {
+        ClientResearchManager manager = ResearchUtils.getManagerCast(true);
+
+        this.movePanel.researchData = manager.getResearchData().get();
+        this.movePanel.playerResearchData = manager.getPlayerData();
+        this.getResearchWidgets().forEach(ResearchWidget::update);
+
+        if(this.infoPanel.researchWidget == null) return;
+        this.infoPanel.setResearch(widget);
+    }
 
     @Override
     public boolean onInit() {
@@ -58,11 +70,6 @@ public class ResearchScreen extends BaseScreen {
     public void onClosed() {
         Instance = null;
         super.onClosed();
-    }
-
-    @Override
-    public void tick() {
-        super.tick();
     }
 
     @Override
@@ -184,22 +191,6 @@ public class ResearchScreen extends BaseScreen {
     public Vector2 getModalPanelSize() {
         return new Vector2(getScreen().getGuiScaledWidth() / 4, getScreen().getGuiScaledHeight() / 6);
     }
-
-    //    @Override
-//    public boolean mousePressed(MouseButton button) {
-//
-//        if(super.mousePressed(button)) {
-//            if (this.currentModalPanel != null && !isMouseOverWidget(this.currentModalPanel)) {
-//                removeAnyModalPanel();
-//            }
-//            return true;
-//        }
-//
-//        return false;
-//    }
-
-
-
 
     @Override
     public void drawForeground(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {

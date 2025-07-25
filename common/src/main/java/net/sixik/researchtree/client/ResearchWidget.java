@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.sixik.researchtree.client.widgets.ProgressBarWidget;
 import net.sixik.researchtree.research.BaseResearch;
+import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.research.manager.PlayerResearchData;
 import net.sixik.researchtree.utils.RenderIcon;
 import net.sixik.researchtree.utils.ResearchUtils;
@@ -25,6 +26,7 @@ public class ResearchWidget extends SimpleTextButton {
 
     public BaseResearch research;
     public boolean researched;
+    public boolean canResearch;
     protected ProgressBarWidget progressBar;
 
     public ResearchWidget(Panel panel, BaseResearch research) {
@@ -43,8 +45,17 @@ public class ResearchWidget extends SimpleTextButton {
         this.icon = Icon.getIcon(research.getIconPath());
         this.progressBar.setMaxValue(100);
         this.progressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, research, true));
-        this.researched = ResearchScreen.Instance.movePanel.playerResearchData.containsInUnlockedResearch(research.getId());
+        update();
         return this;
+    }
+
+    public void update() {
+        this.researched = isResearchedUnCached();
+        this.canResearch = ResearchUtils.isResearchParentsResearched(Minecraft.getInstance().player, research, true);
+    }
+
+    public boolean isResearchedUnCached() {
+        return ResearchScreen.Instance.movePanel.playerResearchData.containsInUnlockedResearch(research.getId());
     }
 
     public ResearchWidget updateProgress(double value) {
@@ -73,12 +84,9 @@ public class ResearchWidget extends SimpleTextButton {
 
     @Override
     public void tick() {
-        if(!researched && Minecraft.getInstance().gui.getGuiTicks() % 10 == 0) {
-            double value = ResearchUtils.getPercentResearch(Minecraft.getInstance().player, research, true);
-            this.progressBar.setValue(value);
-            if(value >= progressBar.getMaxValue())
-                this.researched = true;
-
+        if(!researched && canResearch) {
+            Optional<PlayerResearchData.ResearchProgressData> optional = ResearchScreen.Instance.movePanel.playerResearchData.getProgressResearch(research.getId());
+            optional.ifPresent(data -> updateProgress(data.getProgressPercentDouble()));
         }
     }
 

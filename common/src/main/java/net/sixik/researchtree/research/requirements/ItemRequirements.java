@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.utils.ExternCodecs;
+import net.sixik.researchtree.utils.ResearchUtils;
 import net.sixik.researchtree.utils.SDMItemHelper;
 
 import java.util.ArrayList;
@@ -61,7 +62,11 @@ public class ItemRequirements extends Requirements {
 
     @Override
     public void refund(Player player, BaseResearch research, double percentageOfReturn) {
-        SDMItemHelper.giveItems(player, itemStack, itemStack.getCount());
+        if(percentageOfReturn < 100 && itemStack.getCount() == 1) {
+            SDMItemHelper.giveItems(player, itemStack, player.level().random.nextBoolean() ? 1 : 0);
+        } else {
+            SDMItemHelper.giveItems(player, itemStack, ResearchUtils.countFromPercents(itemStack.getCount(), percentageOfReturn));
+        }
     }
 
     @Override

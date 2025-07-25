@@ -53,6 +53,11 @@ public class ResearchUtils {
         return researchOptional.map(PlayerResearchData.ResearchProgressData::getProgressPercentDouble).orElse(0.0d);
     }
 
+    public static Optional<PlayerResearchData.ResearchProgressData> getResearchData(Player player, BaseResearch research, boolean isClient) {
+        PlayerResearchData playerData = getManager(isClient).getOrCreatePlayerData(player);
+        return playerData.getProgressResearch(research.getId());
+    }
+
     public static double getRefundPercent(Player player, BaseResearch research) {
         double per = research.getRefundPercent();
         return per <= -1 ? ResearchTree.MOD_CONFIG.getDefaultRefundPercent() : per;
@@ -87,6 +92,10 @@ public class ResearchUtils {
         return canStartResearch(player, research, getManager(isClient));
     }
 
+    public static boolean isResearchParentsResearched(Player player, BaseResearch research, boolean isClient) {
+        return isResearchParentsResearched(player, research, research.getCountParentsToResearch(), isClient);
+    }
+
     public static boolean isResearchParentsResearched(Player player, BaseResearch research, int count, boolean isClient) {
         return countResearchedParents(player, research, isClient) >= count;
     }
@@ -114,5 +123,13 @@ public class ResearchUtils {
             if(Minecraft.getInstance().screen instanceof ScreenWrapper wrapper && wrapper.getGui() instanceof ResearchScreen screen)
                 screen.closeGui();
         }
+    }
+
+    public static int countFromPercents(int count, double percent) {
+        int refundCount = (int) Math.floor(count * (percent / 100.0));
+        if (refundCount == 0 && percent > 0 && count > 0) {
+            refundCount = 1;
+        }
+        return refundCount;
     }
 }

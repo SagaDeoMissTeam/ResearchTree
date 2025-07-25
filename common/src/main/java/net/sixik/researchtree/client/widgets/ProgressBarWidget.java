@@ -38,6 +38,10 @@ public class ProgressBarWidget extends Widget {
         return minValue;
     }
 
+    public double getValue() {
+        return currentValue;
+    }
+
     public void setValue(Number value) {
         this.currentValue = value.doubleValue();
         updateProgress();

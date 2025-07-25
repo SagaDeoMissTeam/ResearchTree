@@ -1,8 +1,10 @@
 package net.sixik.researchtree.research.manager;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.nbt.*;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -12,7 +14,11 @@ import net.sixik.researchtree.api.FullCodecSerializer;
 import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.utils.ResearchUtils;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 public class ResearchManager implements FullCodecSerializer<ResearchManager> {
@@ -28,13 +34,15 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
 
     protected long lastTickTime = 0;
 
-    protected final Object syncDataObject = new Object();
+    protected final Object syncPlayerDataObject = new Object();
     protected final List<PlayerResearchData> playersResearchData = new ArrayList<>();
 
-
     protected @Nullable ResearchData researchData;
+    protected Logger logger;
 
-    public ResearchManager() {}
+    public ResearchManager(Logger logger) {
+        this.logger = logger;
+    }
 
     protected ResearchManager(List<PlayerResearchData> playersResearchData) {
         this.playersResearchData.addAll(playersResearchData);
@@ -53,7 +61,7 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
     }
 
     public PlayerResearchData getOrCreatePlayerData(UUID playerGameProfile) {
-        synchronized (syncDataObject) {
+        synchronized (syncPlayerDataObject) {
             Optional<PlayerResearchData> optional = playersResearchData.stream().filter(data -> Objects.equals(playerGameProfile, data.getPlayerId())).findFirst();
             if (optional.isPresent()) return optional.get();
             PlayerResearchData playerData = new PlayerResearchData(playerGameProfile);
@@ -71,7 +79,7 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
     }
 
     public Optional<PlayerResearchData> getPlayerDataOptional(UUID playerGameProfile) {
-        synchronized (syncDataObject) {
+        synchronized (syncPlayerDataObject) {
             return playersResearchData.stream()
                     .filter(data -> Objects.equals(playerGameProfile, data.getPlayerId()))
                     .findFirst();
@@ -118,9 +126,10 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
     public final void tickResearchData() {
         long deltaTimeMs = System.currentTimeMillis() - lastTickTime;
 
-        synchronized (syncDataObject) {
+        synchronized (syncPlayerDataObject) {
             for (PlayerResearchData data : playersResearchData) {
-                data.tick(deltaTimeMs);
+                if(data.playerOnline)
+                    data.tick(deltaTimeMs);
             }
         }
 
@@ -140,4 +149,46 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
     public void shutdown() {}
 
     public record TeammatesResearch(List<UUID> teammates, List<ResourceLocation> researches) {}
+
+    public final void loadPlayerData(Path path, String fileName) {
+        try {
+            CompoundTag nbt = NbtIo.read(path.resolve(fileName));
+            if(nbt == null || !nbt.contains("player_data")) return;
+            Tag listNbtData = nbt.get("player_data");
+
+            Pair<List<PlayerResearchData>, Tag> value = PlayerResearchData.CODEC.listOf().decode(NbtOps.INSTANCE, listNbtData).getOrThrow();
+
+            synchronized (syncPlayerDataObject) {
+                this.playersResearchData.clear();
+                this.playersResearchData.addAll(value.getFirst());
+            }
+        } catch (Exception e) {
+            logger.error(e.toString());
+        }
+    }
+
+    public final void savePlayerData(Path path, String fileName) {
+        Tag nbt;
+
+        synchronized (syncPlayerDataObject) {
+            nbt = PlayerResearchData.CODEC.listOf().encodeStart(NbtOps.INSTANCE, getPlayersResearchData()).getOrThrow();
+        }
+
+        CompoundTag dataNbt = new CompoundTag();
+        dataNbt.put("player_data", nbt);
+        try {
+            File file = path.toFile();
+            if(!file.exists()) {
+                file.mkdirs();
+            }
+            Path pt = path.resolve(fileName);
+            file = pt.toFile();
+            if(!file.exists())
+                file.createNewFile();
+
+            NbtIo.write(dataNbt, pt);
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
+    }
 }
