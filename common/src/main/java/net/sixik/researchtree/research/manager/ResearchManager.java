@@ -4,7 +4,10 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.nbt.*;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -86,42 +89,42 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
         }
     }
 
-    public List<UUID> syncPlayerDataWithTeammates(UUID playerGameProfile) {
-        TeammatesResearch teammatesResearch = getUnlockedTeammatesResearch(playerGameProfile);
-        PlayerResearchData mainPlayerData = getOrCreatePlayerData(playerGameProfile);
-        mainPlayerData.addUnlockedResearch(teammatesResearch.researches);
-        return teammatesResearch.teammates;
-    }
-
-    public void syncPlayerTeamData(UUID playerGameProfile) {
-        for (UUID playerTeammate : ResearchUtils.getPlayerTeammates(playerGameProfile)) {
-            syncPlayerDataWithTeammates(playerTeammate);
-        }
-    }
-
-    public TeammatesResearch getUnlockedTeammatesResearch(UUID playerGameProfile) {
-        TeammatesResearch teammatesResearch = new TeammatesResearch(new ArrayList<>(), new ArrayList<>());
-        PlayerResearchData mainPlayerData = getOrCreatePlayerData(playerGameProfile);
-        List<UUID> teammatesIds = ResearchUtils.getPlayerTeammates(playerGameProfile);
-
-        for (UUID teammatesId : teammatesIds) {
-            boolean founded = false;
-            PlayerResearchData teammateData = getOrCreatePlayerData(teammatesId);
-
-            for (ResourceLocation unlockedResearch : teammateData.getUnlockedResearch()) {
-
-                if(!mainPlayerData.hasResearch(unlockedResearch) && !teammatesResearch.researches.contains(unlockedResearch)) {
-                    teammatesResearch.researches.add(unlockedResearch);
-                    founded = true;
-                }
-            }
-
-            if(founded)
-                teammatesResearch.teammates.add(teammatesId);
-        }
-
-        return teammatesResearch;
-    }
+//    public List<UUID> syncPlayerDataWithTeammates(UUID playerGameProfile) {
+//        TeammatesResearch teammatesResearch = getUnlockedTeammatesResearch(playerGameProfile);
+//        PlayerResearchData mainPlayerData = getOrCreatePlayerData(playerGameProfile);
+//        mainPlayerData.addUnlockedResearch(teammatesResearch.researches);
+//        return teammatesResearch.teammates;
+//    }
+//
+//    public void syncPlayerTeamData(UUID playerGameProfile) {
+//        for (UUID playerTeammate : ResearchUtils.getPlayerTeammates(playerGameProfile)) {
+//            syncPlayerDataWithTeammates(playerTeammate);
+//        }
+//    }
+//
+//    public TeammatesResearch getUnlockedTeammatesResearch(UUID playerGameProfile) {
+//        TeammatesResearch teammatesResearch = new TeammatesResearch(new ArrayList<>(), new ArrayList<>());
+//        PlayerResearchData mainPlayerData = getOrCreatePlayerData(playerGameProfile);
+//        List<UUID> teammatesIds = ResearchUtils.getPlayerTeammates(playerGameProfile);
+//
+//        for (UUID teammatesId : teammatesIds) {
+//            boolean founded = false;
+//            PlayerResearchData teammateData = getOrCreatePlayerData(teammatesId);
+//
+//            for (ResourceLocation unlockedResearch : teammateData.getUnlockedResearch()) {
+//
+//                if(!mainPlayerData.hasResearch(unlockedResearch) && !teammatesResearch.researches.contains(unlockedResearch)) {
+//                    teammatesResearch.researches.add(unlockedResearch);
+//                    founded = true;
+//                }
+//            }
+//
+//            if(founded)
+//                teammatesResearch.teammates.add(teammatesId);
+//        }
+//
+//        return teammatesResearch;
+//    }
 
     public final void tickResearchData() {
         long deltaTimeMs = System.currentTimeMillis() - lastTickTime;

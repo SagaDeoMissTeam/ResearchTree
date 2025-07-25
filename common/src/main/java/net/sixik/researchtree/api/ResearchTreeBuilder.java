@@ -2,25 +2,33 @@ package net.sixik.researchtree.api;
 
 import com.blamejared.crafttweaker.api.annotation.ZenRegister;
 import net.minecraft.resources.ResourceLocation;
-import net.sixik.researchtree.ResearchTree;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.sixik.researchtree.compat.ScriptContext;
 import net.sixik.researchtree.compat.crafttweaker.CraftTweakerScriptContext;
 import net.sixik.researchtree.compat.kubejs.KubejSScriptContext;
 import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
-import net.sixik.researchtree.research.manager.ClientResearchManager;
-import net.sixik.researchtree.research.manager.ServerResearchManager;
+import net.sixik.researchtree.research.ResearchShowType;
+import net.sixik.researchtree.research.ResearchHideTypeRender;
+import net.sixik.researchtree.research.functions.BaseFunction;
+import net.sixik.researchtree.research.functions.ScriptFunction;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
-import net.sixik.researchtree.utils.ResearchUtils;
 import org.openzen.zencode.java.ZenCodeType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 
 @ZenRegister
@@ -78,6 +86,10 @@ public class ResearchTreeBuilder {
         protected List<RequirementBuilder> requirementBuilders = new ArrayList<>();
         protected List<RewardBuilder> rewardBuilders = new ArrayList<>();
         protected List<ResourceLocation> parents = new ArrayList<>();
+        protected List<BaseFunction> onStartFunction = new ArrayList<>();
+        protected List<BaseFunction> onEndFunction = new ArrayList<>();
+        protected ResearchShowType showType = ResearchShowType.SHOW;
+        protected ResearchHideTypeRender hideTypeRender = ResearchHideTypeRender.NON_STYLE;
         protected long researchTime = -1L;
         protected boolean researchStopping =  true;
         protected boolean shouldRenderConnection = true;
@@ -146,6 +158,56 @@ public class ResearchTreeBuilder {
             return this;
         }
 
+        @ZenCodeType.Method
+        public ResearchBuilder showType(int type) {
+            this.showType = ResearchShowType.values()[Mth.clamp(type, 0, ResearchShowType.values().length)];
+            return this;
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder hideTypeRender(int type) {
+            this.hideTypeRender = ResearchHideTypeRender.values()[Math.clamp(type, 0, ResearchHideTypeRender.values().length)];
+            return this;
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder addFunctionOnStart(int executeStage, String functionId, Object... args) {
+            return addFunction(onStartFunction, executeStage, functionId, args);
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder addFunctionOnEnd(int executeStage, String functionId, Object... args) {
+            return addFunction(onEndFunction, executeStage, functionId, args);
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder addCustomFunctionOnStart(int executeStage, BiConsumer<ServerPlayer, BaseResearch> function) {
+            this.onStartFunction.add(new ScriptFunction(function, executeStage));
+            return this;
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder addCustomFunctionOnEnd(int executeStage, BiConsumer<ServerPlayer, BaseResearch> function) {
+            this.onEndFunction.add(new ScriptFunction(function, executeStage));
+            return this;
+        }
+
+        private ResearchBuilder addFunction(Collection<BaseFunction> funcList, int executeStage, String functionId, Object... arg) {
+            Optional<Supplier<BaseFunction>> funcOpt = ModRegisters.getFunctionSupplier(functionId);
+            if(funcOpt.isEmpty()) {
+                context.error("Can't find function with id '" + functionId + "'");
+                return this;
+            }
+
+            BaseFunction func = funcOpt.get().get();
+            if(func.internalCheckErrors(context, arg)) {
+                func.setStage(executeStage);
+                func.setArgs(arg);
+                funcList.add(func);
+            }
+            return this;
+        }
+
         protected BaseResearch complete() {
             BaseResearch baseResearch = new BaseResearch(researchId, iconId);
             baseResearch.setDescriptionRaw(descriptions);
@@ -166,6 +228,11 @@ public class ResearchTreeBuilder {
                 baseResearch.addParent(parent);
             }
 
+            baseResearch.setFunctions(onStartFunction, onEndFunction);
+
+
+            baseResearch.showType = showType;
+            baseResearch.hideTypeRender = hideTypeRender;
             baseResearch.researchStopping = researchStopping;
             baseResearch.researchTime = researchTime;
             baseResearch.shouldRenderConnection = shouldRenderConnection;

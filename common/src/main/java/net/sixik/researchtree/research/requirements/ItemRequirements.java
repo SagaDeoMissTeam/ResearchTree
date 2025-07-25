@@ -51,6 +51,13 @@ public class ItemRequirements extends Requirements {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof ItemRequirements requirements)
+            return SDMItemHelper.equals(this.itemStack, requirements.itemStack);
+        return super.equals(obj);
+    }
+
+    @Override
     public boolean execute(Player player, BaseResearch research) {
         return SDMItemHelper.shrinkItem(player.getInventory(), itemStack, itemStack.getCount(), itemStack.getComponents().isEmpty());
     }

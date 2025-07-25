@@ -1,7 +1,6 @@
 package net.sixik.researchtree.research.manager;
 
 import dev.architectury.event.events.common.TickEvent;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,9 +9,11 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.ResearchTreeBuilder;
 import net.sixik.researchtree.network.ask.SyncResearchASK;
-import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
+import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataS2C;
+import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
+import net.sixik.researchtree.research.teams.TeamManager;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class ServerResearchManager extends ResearchManager {
 
     protected ConcurrentHashMap<ResourceLocation, ResearchData> researchesData;
     protected CopyOnWriteArrayList<PlayerResearchData.PlayerOfflineData> offlineData = new CopyOnWriteArrayList<>();
+    protected List<TeamManager> teamManagers = new ArrayList<>();
 
     public ServerResearchManager(MinecraftServer server) {
         super(LOGGER);
@@ -69,7 +71,12 @@ public class ServerResearchManager extends ResearchManager {
             }
         }
 
+        loadTeamManagers();
         loadPlayerData(server.getWorldPath(LevelResource.ROOT).resolve("research_tree"), "player_data.nbt");
+    }
+
+    public void loadTeamManagers() {
+        ModRegisters.getTeamManagers().forEach(s -> teamManagers.add(s.get()));
     }
 
     private void startTaskProcessing() {
@@ -198,6 +205,29 @@ public class ServerResearchManager extends ResearchManager {
         return Optional.ofNullable(server.getPlayerList().getPlayer(player));
     }
 
+    public List<BaseResearch> findResearchesByIds(Collection<ResourceLocation> resourceLocations) {
+         List<BaseResearch> baseResearches = new ArrayList<>();
+         for (Map.Entry<ResourceLocation, ResearchData> entry : researchesData.entrySet()) {
+            List<BaseResearch> copyLst = new ArrayList<>(entry.getValue().getResearchList());
+            for (BaseResearch baseResearch : copyLst) {
+                if(resourceLocations.contains(baseResearch.getId())) {
+                    baseResearches.add(baseResearch);
+                }
+            }
+        }
+        return baseResearches;
+    }
+
+    public List<BaseResearch> findResearchesByIds(ResourceLocation researchDataId, Collection<ResourceLocation> resourceLocations) {
+        List<BaseResearch> baseResearches = new ArrayList<>();
+        for (BaseResearch baseResearch : researchesData.getOrDefault(researchDataId, new ResearchData()).getResearchList()) {
+            if(resourceLocations.contains(baseResearch.getId())) {
+                baseResearches.add(baseResearch);
+            }
+        }
+        return baseResearches;
+    }
+
     public Optional<BaseResearch> findResearchById(ResourceLocation researchId) {
         for (Map.Entry<ResourceLocation, ResearchData> entry : researchesData.entrySet()) {
             List<BaseResearch> copyLst = new ArrayList<>(entry.getValue().getResearchList());
@@ -243,9 +273,23 @@ public class ServerResearchManager extends ResearchManager {
     }
 
     public void addOfflineData(UUID playerId, ResourceLocation researchDataId, ResourceLocation researchId) {
-        offlineData.stream().filter(s -> s.getPlayerOwnerId().equals(playerId)).findFirst().ifPresent(data -> {
-            data.addResearchData(researchDataId, researchId);
-        });
+        PlayerResearchData.PlayerOfflineData playerOfflineData = null;
+
+        boolean exists = false;
+        for (PlayerResearchData.PlayerOfflineData offlineDatum : offlineData) {
+            if(offlineDatum.getPlayerOwnerId().equals(playerId)) {
+                playerOfflineData = offlineDatum;
+                exists = true;
+                break;
+            }
+        }
+
+        if(!exists) {
+            playerOfflineData = new PlayerResearchData.PlayerOfflineData(playerId, false, new HashMap<>());
+            offlineData.add(playerOfflineData);
+        }
+
+        playerOfflineData.addResearchData(researchDataId, researchId);
     }
 
     public void removeOfflineData(UUID playerId, ResourceLocation researchDataId, ResourceLocation researchId) {
@@ -258,5 +302,45 @@ public class ServerResearchManager extends ResearchManager {
         offlineData.stream().filter(s -> s.getPlayerOwnerId().equals(player.getGameProfile().getId())).findFirst().ifPresent(data -> {
             data.execute(player);
         });
+    }
+
+    public void invokeTeamManagers(Consumer<TeamManager> function) {
+        for (TeamManager teamManager : teamManagers) {
+            function.accept(teamManager);
+        }
+    }
+
+    public <T> Optional<T> invokeTeamManagers(Function<TeamManager, Optional<T>> function) {
+        for (TeamManager teamManager : teamManagers) {
+            Optional<T> apply = function.apply(teamManager);
+            if(apply.isPresent()) return apply;
+        }
+
+        return Optional.empty();
+    }
+
+    public boolean synchronizePlayerDataWithTeammates(ServerPlayer player) {
+        return invokeTeamManagers(teamManager -> {
+            PlayerResearchData mainPlayerManager = getOrCreatePlayerData(player);
+            List<ResourceLocation> researches = new ArrayList<>();
+            if(!teamManager.haveTeam(player)) return Optional.of(false);
+
+
+            for (UUID memberUUID : teamManager.getTeamMembers(player)) {
+                if(memberUUID.equals(player.getGameProfile().getId())) continue;
+
+                Optional<PlayerResearchData> playerResearchData = getPlayerDataOptional(memberUUID);
+                if(playerResearchData.isEmpty()) continue;
+
+                researches.addAll(playerResearchData.get().unlockedResearch);
+            }
+
+            if(researches.isEmpty()) return Optional.of(false);
+            findResearchesByIds(researches).forEach(s -> s.onResearchEnd(player, false, false));
+
+            SendPlayerResearchDataS2C.sendTo(player, mainPlayerManager);
+
+            return Optional.of(true);
+        }).isPresent();
     }
 }

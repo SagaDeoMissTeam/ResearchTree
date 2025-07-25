@@ -36,6 +36,7 @@ dependencies {
 
     modApi("dev.ftb.mods:ftb-library-fabric:${rootProject.ftb_lib}") { transitive false }
     modApi "curse.maven:sdm-ui-lib-1095061:6515618"
+    modApi("dev.ftb.mods:ftb-teams-fabric:2101.1.2") { transitive false }
 
     modImplementation("io.github.spair:imgui-java-lwjgl3:${rootProject.imguiVersion}")
     modImplementation("io.github.spair:imgui-java-binding:${rootProject.imguiVersion}")

@@ -74,6 +74,10 @@ public class SDMItemHelper {
         return true;
     }
 
+    public static boolean equals(final ItemStack item1, final ItemStack item2) {
+        return equals(item1, item2, item1.getComponents().isEmpty());
+    }
+
     public static boolean equals(final ItemStack item1, final ItemStack item2, final boolean ignoreNbt) {
         if(item1 == null || item2 == null) return false;
 

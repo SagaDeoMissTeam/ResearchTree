@@ -3,14 +3,8 @@ package net.sixik.researchtree;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
-import net.sixik.researchtree.config.ModConfig;
-import net.sixik.researchtree.network.ask.SyncResearchASK;
-import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataS2C;
-import net.sixik.researchtree.research.DebugResearchData;
-import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
-import net.sixik.researchtree.utils.ResearchUtils;
 
 public class ResearchTreeModEvents {
 
@@ -30,9 +24,10 @@ public class ResearchTreeModEvents {
                 playerData.updatePlayerOnline(true);
             });
 
-
             ServerResearchManager.getInstance().executeOfflineData(serverPlayer);
-            SendPlayerResearchDataS2C.sendTo(serverPlayer);
+
+            if(!ServerResearchManager.getInstance().synchronizePlayerDataWithTeammates(serverPlayer))
+                SendPlayerResearchDataS2C.sendTo(serverPlayer);
         });
 
         PlayerEvent.PLAYER_QUIT.register(serverPlayer -> {

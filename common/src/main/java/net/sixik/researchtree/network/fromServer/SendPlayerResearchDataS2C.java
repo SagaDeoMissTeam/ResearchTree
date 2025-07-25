@@ -23,6 +23,10 @@ public record SendPlayerResearchDataS2C(PlayerResearchData researchData) impleme
         NetworkHelper.sendTo(player, new SendPlayerResearchDataS2C(ResearchUtils.getManager(false).getOrCreatePlayerData(player)));
     }
 
+    public static void sendTo(ServerPlayer player, PlayerResearchData playerResearchData) {
+        NetworkHelper.sendTo(player, new SendPlayerResearchDataS2C(playerResearchData));
+    }
+
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type() {
         return TYPE;

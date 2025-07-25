@@ -6,7 +6,6 @@ import dev.architectury.platform.Platform;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import dev.ftb.mods.ftblibrary.ui.Theme;
 import net.minecraft.client.KeyMapping;
-import net.sixik.researchtree.client.ResearchScreen;
 import net.sixik.researchtree.config.ModConfig;
 import net.sixik.researchtree.network.ResearchTreeNetwork;
 import net.sixik.researchtree.network.ask.GetAndOpenResearchScreenASK;

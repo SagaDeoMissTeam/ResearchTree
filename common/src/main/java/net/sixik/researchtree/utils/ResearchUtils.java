@@ -15,10 +15,7 @@ import net.sixik.researchtree.research.manager.ResearchManager;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
 import net.sixik.researchtree.research.requirements.Requirements;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public class ResearchUtils {
 
@@ -109,10 +106,6 @@ public class ResearchUtils {
         }
 
         return count;
-    }
-
-    public static List<UUID> getPlayerTeammates(UUID playerGameProfile) {
-        return new ArrayList<>();
     }
 
     @Environment(EnvType.CLIENT)

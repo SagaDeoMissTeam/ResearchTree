@@ -2,7 +2,6 @@ package net.sixik.researchtree.research.rewards;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import dev.architectury.platform.Platform;
 import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.icon.ItemIcon;
 import dev.ftb.mods.ftblibrary.ui.GuiHelper;
@@ -56,6 +55,13 @@ public class ItemReward extends Reward{
     @Override
     public void draw(GuiGraphics graphics, int x, int y, int w, int h) {
         icon.draw(graphics, x, y, w, h);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof ItemReward requirements)
+            return SDMItemHelper.equals(this.itemStack, requirements.itemStack);
+        return super.equals(obj);
     }
 
     @Override

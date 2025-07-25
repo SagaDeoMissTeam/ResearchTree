@@ -1,9 +1,7 @@
 package net.sixik.researchtree.research.requirements;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.ftb.mods.ftblibrary.util.TooltipList;
-import io.netty.buffer.ByteBuf;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,7 +10,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.api.TooltipSupport;
 import net.sixik.researchtree.client.render.RenderTooltip;
-import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.sorter.Sorter;
 import net.sixik.researchtree.utils.ResearchRenderUtils;

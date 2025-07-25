@@ -1,11 +1,9 @@
 package net.sixik.researchtree.client.render;
 
-import dev.ftb.mods.ftblibrary.ui.Widget;
 import net.minecraft.client.gui.GuiGraphics;
 import net.sixik.researchtree.client.ClientUtils;
 import net.sixik.researchtree.client.ResearchWidget;
 import net.sixik.researchtree.utils.ResearchRenderUtils;
-import net.sixik.sdmuilibrary.client.utils.renders.ShapesRenderHelper;
 
 import java.util.ArrayList;
 import java.util.List;

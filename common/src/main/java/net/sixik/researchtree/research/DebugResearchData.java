@@ -6,7 +6,6 @@ import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.client.debug.ClientDebugUtils;
 
 import java.util.List;
-import java.util.UUID;
 
 public class DebugResearchData extends ResearchData{
 

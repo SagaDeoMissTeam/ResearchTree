@@ -42,6 +42,7 @@ dependencies {
 
     modApi("dev.ftb.mods:ftb-library-neoforge:${rootProject.ftb_lib}") { transitive false }
     modApi "curse.maven:sdm-ui-lib-1095061:6515615"
+    modApi("dev.ftb.mods:ftb-teams-neoforge:2101.1.2") { transitive false }
 
 
     minecraftClientLibraries("io.github.spair:imgui-java-lwjgl3:${rootProject.imguiVersion}")

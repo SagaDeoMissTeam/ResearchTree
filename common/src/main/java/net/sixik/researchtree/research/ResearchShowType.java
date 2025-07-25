@@ -1,0 +1,11 @@
+package net.sixik.researchtree.research;
+
+public enum ResearchShowType {
+    SHOW,
+    SHOW_WHEN_UNLOCK_PARENT,
+    SHOW_WHEN_UNLOCK_ALL_PARENTS,
+    SHOW_WHEN_ANY_TRIGGER_COMPLETE,
+    SHOW_WHEN_ALL_TRIGGER_COMPLETE,
+    SHOW_WHEN_CUSTOM_TRIGGER_COMPLETE,
+    HIDDEN
+}

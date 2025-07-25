@@ -1,12 +1,6 @@
 package net.sixik.researchtree.client.render;
 
 import dev.ftb.mods.ftblibrary.ui.Panel;
-import dev.ftb.mods.ftblibrary.ui.Theme;
-import net.minecraft.client.gui.GuiGraphics;
-import net.sixik.researchtree.client.ResearchScreen;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ModalRenderReward extends BaseRenderReward{
     public ModalRenderReward(Panel panel) {

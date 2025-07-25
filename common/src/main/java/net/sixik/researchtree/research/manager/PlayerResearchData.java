@@ -9,15 +9,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.FullCodecSerializer;
-import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchChangeType;
-import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.utils.ResearchUtils;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
@@ -377,18 +374,21 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         public static final Codec<PlayerOfflineData> CODEC = RecordCodecBuilder.create(instance ->
                 instance.group(
                         Codec.STRING.fieldOf("ownerId").forGetter(s -> s.getPlayerOwnerId().toString()),
+                        Codec.BOOL.fieldOf("useTeam").forGetter(PlayerOfflineData::isUseTeam),
                         MAP_CODEC.fieldOf("unlockedResearches").forGetter(PlayerOfflineData::getUnlockedResearches)
                 ).apply(instance, PlayerOfflineData::new));
 
         private final UUID playerOwnerId;
+        private final boolean useTeam;
         private final ConcurrentHashMap<ResourceLocation, List<ResourceLocation>> unlockedResearches = new ConcurrentHashMap<>();
 
-        protected PlayerOfflineData(String playerOwnerId, Map<ResourceLocation, List<ResourceLocation>> map) {
-            this(UUID.fromString(playerOwnerId), map);
+        protected PlayerOfflineData(String playerOwnerId, boolean useTeam, Map<ResourceLocation, List<ResourceLocation>> map) {
+            this(UUID.fromString(playerOwnerId), useTeam, map);
         }
 
-        public PlayerOfflineData(UUID playerOwnerId, Map<ResourceLocation, List<ResourceLocation>> map) {
+        public PlayerOfflineData(UUID playerOwnerId, boolean useTeam, Map<ResourceLocation, List<ResourceLocation>> map) {
             this.playerOwnerId = playerOwnerId;
+            this.useTeam = useTeam;
             this.unlockedResearches.putAll(map);
         }
 
@@ -402,6 +402,10 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
 
         public boolean removeResearchData(ResourceLocation researchDataId, ResourceLocation researchId) {
             return unlockedResearches.getOrDefault(researchDataId, new ArrayList<>()).removeIf(s -> s.equals(researchId));
+        }
+
+        public boolean isUseTeam() {
+            return useTeam;
         }
 
         public void execute(Player player) {

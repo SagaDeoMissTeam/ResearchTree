@@ -3,7 +3,6 @@ package net.sixik.researchtree.research.manager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
-import net.sixik.researchtree.api.ResearchTreeBuilder;
 import net.sixik.researchtree.research.ResearchData;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;

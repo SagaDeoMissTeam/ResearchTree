@@ -10,7 +10,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.sixik.researchtree.client.widgets.ProgressBarWidget;
 import net.sixik.researchtree.research.BaseResearch;
-import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.research.manager.PlayerResearchData;
 import net.sixik.researchtree.utils.RenderIcon;
 import net.sixik.researchtree.utils.ResearchUtils;

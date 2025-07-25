@@ -5,7 +5,6 @@ import dev.ftb.mods.ftblibrary.ui.Theme;
 import dev.ftb.mods.ftblibrary.ui.Widget;
 import net.minecraft.client.gui.GuiGraphics;
 import net.sixik.researchtree.client.ResearchScreen;
-import net.sixik.researchtree.client.debug.ClientDebugUtils;
 import net.sixik.researchtree.utils.ResearchRenderUtils;
 import net.sixik.sdmuilibrary.client.utils.misc.RGBA;
 

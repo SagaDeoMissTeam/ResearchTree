@@ -1,7 +1,6 @@
 package net.sixik.researchtree.research.rewards;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.ftb.mods.ftblibrary.util.TooltipList;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

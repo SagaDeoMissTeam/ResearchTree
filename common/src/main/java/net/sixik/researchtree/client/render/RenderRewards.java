@@ -2,7 +2,6 @@ package net.sixik.researchtree.client.render;
 
 import dev.ftb.mods.ftblibrary.ui.Theme;
 import dev.ftb.mods.ftblibrary.util.TooltipList;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.sixik.researchtree.client.ResearchWidget;
 import net.sixik.researchtree.research.rewards.Reward;

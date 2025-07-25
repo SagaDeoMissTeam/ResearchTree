@@ -3,7 +3,10 @@ package net.sixik.researchtree.research;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.resources.language.I18n;
-import net.minecraft.nbt.*;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -17,14 +20,17 @@ import net.sixik.researchtree.client.ClientUtils;
 import net.sixik.researchtree.network.fromServer.SendCompleteResearchingS2C;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
 import net.sixik.researchtree.registers.ModRegisters;
+import net.sixik.researchtree.research.functions.BaseFunction;
 import net.sixik.researchtree.research.manager.PlayerResearchData;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
+import net.sixik.researchtree.research.triggers.BaseTrigger;
 import net.sixik.researchtree.utils.NbtUtils;
 import net.sixik.researchtree.utils.ResearchUtils;
 import net.sixik.researchtree.utils.TextUtils;
 import org.jetbrains.annotations.Nullable;
+import oshi.util.tuples.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -65,12 +71,18 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     public boolean researchStopping = true;
     public long researchTime = -1L;
     public double refundPercent = -1;
-    protected int countParentsToResearch = 0;
+    public int countParentsToResearch = 0;
+    public ResearchShowType showType = ResearchShowType.SHOW;
+    public ResearchHideTypeRender hideTypeRender = ResearchHideTypeRender.NON_STYLE;
 
     private final String cachedTranslate;
     private HashSet<Requirements> cachedRequirements = new HashSet<>();
     private List<Component> cachedDescriptions = new ArrayList<>();
     private List<BaseResearch> cachedParents = new ArrayList<>();
+    private List<BaseFunction> onStartFunctions = new ArrayList<>();
+    private List<BaseFunction> onEndFunctions = new ArrayList<>();
+    private List<BaseTrigger> baseTriggers = new ArrayList<>();
+
     private boolean cacheParentsDirty = true;
 
     public BaseResearch() {
@@ -108,6 +120,11 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     public BaseResearch setResearchData(ResearchData data) {
         this.researchData = data;
         return this;
+    }
+
+    public void setFunctions(List<BaseFunction> start, List<BaseFunction> end) {
+        onStartFunctions = start;
+        onEndFunctions = end;
     }
 
     public boolean isShouldRenderConnection() {
@@ -288,6 +305,8 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     }
 
     public void onResearchStart(Player player) {
+        onStartFunctions.stream().filter(BaseFunction::isBeforeStage).forEach(s -> s.execute((ServerPlayer) player, this));
+
         ServerResearchManager manager = ResearchUtils.getManagerCast(false);
         if(!ResearchUtils.canStartResearch(player, this, manager)) return;
 
@@ -320,6 +339,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
                 SendPlayerResearchDataChangeS2C.sendAddProgress(serverPlayer, this.getId(), researchTime);
             }
         }
+        onStartFunctions.stream().filter(BaseFunction::isAfterStage).forEach(s -> s.execute((ServerPlayer) player, this));
     }
 
     public void onResearchCancel(Player player) {
@@ -338,22 +358,49 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     }
 
     public void onResearchEnd(Player player) {
+        onResearchEnd(player, true, true);
+    }
+
+    public void onResearchEnd(Player player, boolean sendPacket, boolean team) {
+        onEndFunctions.stream().filter(BaseFunction::isBeforeStage).forEach(s -> s.execute((ServerPlayer) player, this));
         ServerResearchManager manager = ResearchUtils.getManagerCast(false);
         manager.getPlayerDataOptional(player).ifPresent(playerData -> {
-            if(!playerData.containsInUnlockedResearch(this.getId())) {
-                playerData.addUnlockedResearch(this.getId());
-            } else return;
 
             if(playerData.containsInProgress(this.getId()))
                 playerData.removeProgressResearch(this.getId());
+
+            if(!playerData.containsInUnlockedResearch(this.getId())) {
+                playerData.addUnlockedResearch(this.getId());
+            } else return;
 
             for (Reward reward : getRewards()) {
                 reward.giveReward(player, this);
             }
 
+            final ServerPlayer serverPlayer = (ServerPlayer)player;
+
+            if(team) {
+                manager.invokeTeamManagers(teamManager -> {
+                    Collection<ServerPlayer> onlinePlayers = teamManager.getTeamOnlineMembers(serverPlayer);
+                    Collection<UUID> offlinePlayers = teamManager.getOfflineMembers(serverPlayer);
+
+                    onlinePlayers.forEach(teamPlayer -> this.onResearchEnd(teamPlayer, true, false));
+
+                    if(offlinePlayers.isEmpty()) return;
+                    Optional<Pair<ResearchData, BaseResearch>> researchData = manager.findResearchAndDataById(this.getId());
+                    if(researchData.isEmpty())
+                        throw new RuntimeException("Can't find ResearchData for " + this.getId());
+
+                    ResourceLocation researchDataId = researchData.get().getA().getId();
+                    offlinePlayers.forEach(offlinePlayer -> manager.addOfflineData(offlinePlayer, researchDataId, this.getId()));
+                });
+            }
+
             sendNotify(player);
-            SendCompleteResearchingS2C.sendTo((ServerPlayer) player, this.getId());
+
+            if(sendPacket) SendCompleteResearchingS2C.sendTo((ServerPlayer) player, this.getId());
         });
+        onEndFunctions.stream().filter(BaseFunction::isAfterStage).forEach(s -> s.execute((ServerPlayer) player, this));
     }
 
     public void sendNotify(Player player) {
@@ -400,6 +447,8 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         nbt.putLong("researchTime", researchTime);
         nbt.putBoolean("researchStopping", researchStopping);
         nbt.putInt("countParentsToResearch", countParentsToResearch);
+        nbt.putInt("showType", showType.ordinal());
+        nbt.putInt("hideTypeRender", hideTypeRender.ordinal());
 
         return nbt;
     }
@@ -419,6 +468,11 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
             researchStopping = nbt.getBoolean("researchStopping");
         if(nbt.contains("countParentsToResearch"))
             countParentsToResearch = nbt.getInt("countParentsToResearch");
+        if(nbt.contains("showType"))
+            showType = ResearchShowType.values()[nbt.getInt("showType")];
+        if(nbt.contains("hideTypeRender"))
+            hideTypeRender = ResearchHideTypeRender.values()[nbt.getInt("hideTypeRender")];
+
 
         NbtUtils.getList(nbt, REQUIREMENTS_KEY, tag -> {
             CompoundTag d1 = (CompoundTag) (tag);

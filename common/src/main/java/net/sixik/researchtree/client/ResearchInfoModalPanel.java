@@ -8,22 +8,14 @@ import dev.ftb.mods.ftblibrary.util.TooltipList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.sixik.researchtree.client.render.BaseRenderReward;
-import net.sixik.researchtree.client.render.ModalRenderReward;
-import net.sixik.researchtree.client.render.RenderRequirements;
-import net.sixik.researchtree.client.render.RenderRewards;
 import net.sixik.researchtree.client.widgets.BaseModalPanel;
 import net.sixik.researchtree.network.fromClient.SendCancelResearchC2S;
 import net.sixik.researchtree.network.fromClient.SendStartResearchC2S;
 import net.sixik.researchtree.research.ResearchStage;
 import net.sixik.researchtree.research.manager.ClientResearchManager;
-import net.sixik.researchtree.research.rewards.Reward;
 import net.sixik.researchtree.utils.ResearchUtils;
 import net.sixik.sdmuilibrary.client.utils.DrawDirection;
 import net.sixik.sdmuilibrary.client.utils.renders.ShapesRenderHelper;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ResearchInfoModalPanel extends BaseModalPanel {
 
