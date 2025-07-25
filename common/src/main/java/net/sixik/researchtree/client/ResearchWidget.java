@@ -41,7 +41,7 @@ public class ResearchWidget extends SimpleTextButton {
     public ResearchWidget setResearch(BaseResearch research) {
         this.research = research;
         this.title = research.getTranslate();
-        this.icon = Icon.getIcon(research.getIconPath());
+        this.icon = research.getIcon();
         this.progressBar.setMaxValue(100);
         this.progressBar.setValue(ResearchUtils.getPercentResearch(Minecraft.getInstance().player, research, true));
         update();

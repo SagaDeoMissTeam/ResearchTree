@@ -37,7 +37,7 @@ After creating the research tree, localization keys are generated for the title 
 | addRequirement           | id as String, arg as Object[]                                           | Adds requirements to the research. Accepts the requirement ID and arguments                                                | addRequirement("net.sixik.researchtree.research.requirements.ItemRequirements", <item:minecraft:diamond> * 42) |
 | addReward                | id as String, arg as Object[]                                           | Adds reward to the research. Accepts the reward ID and arguments                                                           | addReward("net.sixik.researchtree.research.rewards.ItemReward", <item:minecraft:iron_ingot> * 5)               |
 | addDescription           | text as String                                                          | Adds a description                                                                                                         | addDescription("Hello World!);                                                                                 |
-| addIcon                  | iconPath as ResourceLocation                                            | Adds an icon                                                                                                               |                                                                                                                |
+| addIcon                  | iconType as String, arg as Object                                       | Adds an icon                                                                                                               | addIcon("item", <item:minecraft:iron_ingot>);                                                                  |
 | stopping                 | value as bool                                                           | Can the research be stopped after the start?                                                                               | stopping(true);                                                                                                |
 | researchTime             | time as long                                                            | The time in milliseconds required for research. The default value is -1. If -1 then the time will be taken from the config | researchTime(50_000);                                                                                          |
 | shouldRenderConnection   | value as bool                                                           | Whether to render display dependence on parents                                                                            | shouldRenderConnection(false);                                                                                 |
@@ -81,11 +81,12 @@ The ID of the elements to add to the study using `addRequirement` and `addReward
 ### ResearchHideTypeRender
 Responsible for how the rendering will take place if the research is hidden
 
-| index | Description                                                 |
-|-------|-------------------------------------------------------------|
-| 0     | Renders the question mark                                   |
-| 1     | Renders only the outline of the object/icon.                |
-| 2     | Completely hidden. Not visible until the conditions are met |
+| index | Description                                                                            |
+|-------|----------------------------------------------------------------------------------------|
+| 0     | Renders the question mark                                                              |
+| 1     | Renders only the outline of the object/icon.                                           |
+| 2     | Completely hidden. Not visible until the conditions are met                            |
+| 3     | The study has an icon and text visible, but it will be slightly dim and not clickable. |
 
 ### ResearchShowType
 Responsible for the display conditions
@@ -99,6 +100,13 @@ Responsible for the display conditions
 | 4     | Hides it until all triggers are executed                    |
 | 5     | Hides it until custom trigger are executed                  |
 | 6     | Always hidden until all conditions and dependencies are met |
+
+### IconType
+
+| Id      | Arguments                        | Description                                    |
+|---------|----------------------------------|------------------------------------------------|
+| texture | id as String or ResourceLocation | Sets the icon based on the path to the texture |
+| item    | item as Item or ItemStack        | Sets the icon based on the item                |
 
 
 ## Example

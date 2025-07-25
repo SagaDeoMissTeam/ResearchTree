@@ -2,6 +2,9 @@ package net.sixik.researchtree.research;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.ftb.mods.ftblibrary.icon.Icon;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -27,6 +30,7 @@ import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
 import net.sixik.researchtree.research.triggers.BaseTrigger;
 import net.sixik.researchtree.utils.NbtUtils;
+import net.sixik.researchtree.utils.ResearchIconHelper;
 import net.sixik.researchtree.utils.ResearchUtils;
 import net.sixik.researchtree.utils.TextUtils;
 import org.jetbrains.annotations.Nullable;
@@ -62,6 +66,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
 
     protected final ResourceLocation id;
     protected ResourceLocation iconPath;
+    protected CompoundTag iconNbt = new CompoundTag();
 
     protected List<ResourceLocation> parentResearch = new ArrayList<>();
     protected HashSet<Requirements> requirements = new HashSet<>();
@@ -73,7 +78,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     public double refundPercent = -1;
     public int countParentsToResearch = 0;
     public ResearchShowType showType = ResearchShowType.SHOW;
-    public ResearchHideTypeRender hideTypeRender = ResearchHideTypeRender.NON_STYLE;
+    public ResearchHideTypeRender hideTypeRender = ResearchHideTypeRender.HIDE_STYLE;
 
     private final String cachedTranslate;
     private HashSet<Requirements> cachedRequirements = new HashSet<>();
@@ -81,7 +86,10 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     private List<BaseResearch> cachedParents = new ArrayList<>();
     private List<BaseFunction> onStartFunctions = new ArrayList<>();
     private List<BaseFunction> onEndFunctions = new ArrayList<>();
-    private List<BaseTrigger> baseTriggers = new ArrayList<>();
+    private List<BaseTrigger> triggers = new ArrayList<>();
+
+    @Environment(EnvType.CLIENT)
+    private Icon cachedIcon = null;
 
     private boolean cacheParentsDirty = true;
 
@@ -100,15 +108,29 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
 
         if(iconPath == null) {
             this.iconPath = ResourceLocation.tryBuild(this.id.getNamespace(), "textures/icon/" + this.id.getPath() + ".png");
-
-
         } else this.iconPath = iconPath;
-
 
         String str = id.getPath();
         if(str.contains("/"))
             str = str.replace('/', '.');
         cachedTranslate = "research." + id.getNamespace() + "." + str;
+    }
+
+    public void setIconNbt(CompoundTag iconNbt) {
+        this.iconNbt = iconNbt;
+    }
+
+    public CompoundTag getIconNbt() {
+        return iconNbt;
+    }
+
+    @Environment(EnvType.CLIENT)
+    public Icon getIcon() {
+        if(cachedIcon == null) {
+            if(iconNbt.isEmpty()) cachedIcon = Icon.getIcon(iconPath);
+            else cachedIcon = ResearchIconHelper.getIcon(iconNbt).orElse(Icon.getIcon(iconPath));
+        }
+        return cachedIcon;
     }
 
     private BaseResearch(ResourceLocation id, ResourceLocation iconPath, boolean shouldRenderConnection, CompoundTag compoundTag) {
@@ -125,6 +147,14 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     public void setFunctions(List<BaseFunction> start, List<BaseFunction> end) {
         onStartFunctions = start;
         onEndFunctions = end;
+    }
+
+    public void setTriggers(List<BaseTrigger> triggers) {
+        this.triggers = triggers;
+    }
+
+    public List<BaseTrigger> getTriggers() {
+        return new ArrayList<>(triggers);
     }
 
     public boolean isShouldRenderConnection() {
@@ -450,6 +480,9 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         nbt.putInt("showType", showType.ordinal());
         nbt.putInt("hideTypeRender", hideTypeRender.ordinal());
 
+        if(!iconNbt.isEmpty())
+            nbt.put("iconNbt", iconNbt);
+
         return nbt;
     }
 
@@ -472,7 +505,8 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
             showType = ResearchShowType.values()[nbt.getInt("showType")];
         if(nbt.contains("hideTypeRender"))
             hideTypeRender = ResearchHideTypeRender.values()[nbt.getInt("hideTypeRender")];
-
+        if(nbt.contains("iconNbt"))
+            iconNbt = (CompoundTag) nbt.get("iconNbt");
 
         NbtUtils.getList(nbt, REQUIREMENTS_KEY, tag -> {
             CompoundTag d1 = (CompoundTag) (tag);

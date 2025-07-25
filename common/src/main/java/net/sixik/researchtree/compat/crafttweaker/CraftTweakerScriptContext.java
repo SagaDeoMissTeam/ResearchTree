@@ -1,7 +1,9 @@
 package net.sixik.researchtree.compat.crafttweaker;
 
 import com.blamejared.crafttweaker.api.CraftTweakerAPI;
+import com.blamejared.crafttweaker.api.item.IItemStack;
 import com.blamejared.crafttweaker.api.item.MCItemStack;
+import com.blamejared.crafttweaker.api.item.MCItemStackMutable;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.compat.ScriptContext;
 import org.apache.logging.log4j.Level;
@@ -43,8 +45,8 @@ public class CraftTweakerScriptContext extends ScriptContext {
 
     @Override
     public Object convert(Object o) {
-        if(o instanceof MCItemStack mcItemStack)
-            return mcItemStack.getInternal();
+        if(o instanceof IItemStack itemStack)
+            return itemStack.getInternal();
 
         return o;
     }

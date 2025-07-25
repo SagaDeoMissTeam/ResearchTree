@@ -327,15 +327,21 @@ public class ResearchInfoPanel extends Panel {
     }
 
     @Override
+    public void draw(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
+        graphics.pose().pushPose();
+        graphics.pose().translate(0,0, 400);
+        super.draw(graphics, theme, x, y, w, h);
+        graphics.pose().popPose();
+    }
+
+    @Override
     public void drawBackground(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
         ShapesRenderHelper.drawRoundedRect(graphics, x,y,w,h, 6, ResearchScreen.DEFAULT_BACKGROUND, DrawDirection.RIGHT);
 //        ResearchScreen.DEFAULT_BACKGROUND.drawRoundFill(graphics, x,y,w,h, 6);
 
         if(researchWidget == null) return;
 
-
-
-        Icon.getIcon(researchWidget.research.getIconPath()).draw(graphics,x + this.titleLabel.getX() - ICON_SIZE - 1 ,y,ICON_SIZE,ICON_SIZE);
+        researchWidget.research.getIcon().draw(graphics,x + this.titleLabel.getX() - ICON_SIZE - 1 ,y,ICON_SIZE,ICON_SIZE);
 
         ResearchRenderUtils.drawLine(LINE_COLOR, graphics, x, y + descriptionPanel.getPosY() + descriptionPanel.getHeight() + 4, w, 1, 4);
     }

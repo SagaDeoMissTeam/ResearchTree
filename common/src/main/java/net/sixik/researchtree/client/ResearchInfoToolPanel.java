@@ -110,6 +110,14 @@ public class ResearchInfoToolPanel extends Panel {
     }
 
     @Override
+    public void draw(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
+        graphics.pose().pushPose();
+        graphics.pose().translate(0,0, 400);
+        super.draw(graphics, theme, x, y, w, h);
+        graphics.pose().popPose();
+    }
+
+    @Override
     public void alignWidgets() {
         List<Widget> list = this.getWidgets().stream().filter(Widget::shouldDraw).toList();
 

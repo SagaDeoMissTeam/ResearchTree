@@ -1,9 +1,12 @@
 package net.sixik.researchtree.api;
 
 import com.blamejared.crafttweaker.api.annotation.ZenRegister;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.sixik.researchtree.compat.ScriptContext;
 import net.sixik.researchtree.compat.crafttweaker.CraftTweakerScriptContext;
 import net.sixik.researchtree.compat.kubejs.KubejSScriptContext;
@@ -16,17 +19,14 @@ import net.sixik.researchtree.research.functions.BaseFunction;
 import net.sixik.researchtree.research.functions.ScriptFunction;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
+import net.sixik.researchtree.utils.ResearchIconHelper;
 import org.openzen.zencode.java.ZenCodeType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -82,6 +82,7 @@ public class ResearchTreeBuilder {
     public class ResearchBuilder {
         protected ResourceLocation researchId;
         protected ResourceLocation iconId;
+        protected CompoundTag iconNbt = new CompoundTag();
         protected List<String> descriptions = new ArrayList<>();
         protected List<RequirementBuilder> requirementBuilders = new ArrayList<>();
         protected List<RewardBuilder> rewardBuilders = new ArrayList<>();
@@ -89,7 +90,7 @@ public class ResearchTreeBuilder {
         protected List<BaseFunction> onStartFunction = new ArrayList<>();
         protected List<BaseFunction> onEndFunction = new ArrayList<>();
         protected ResearchShowType showType = ResearchShowType.SHOW;
-        protected ResearchHideTypeRender hideTypeRender = ResearchHideTypeRender.NON_STYLE;
+        protected ResearchHideTypeRender hideTypeRender = ResearchHideTypeRender.HIDE_STYLE;
         protected long researchTime = -1L;
         protected boolean researchStopping =  true;
         protected boolean shouldRenderConnection = true;
@@ -129,8 +130,31 @@ public class ResearchTreeBuilder {
         }
 
         @ZenCodeType.Method
-        public ResearchBuilder addIcon(ResourceLocation location) {
-            this.iconId = location;
+        public ResearchBuilder addIcon(String type, Object object) {
+            object = context.convert(object);
+
+            if(Objects.equals(type, "texture")) {
+                if(object instanceof String str)
+                    this.iconId = ResourceLocation.tryParse(str);
+                else if(object instanceof ResourceLocation location)
+                    this.iconId = location;
+                else
+                    context.error("Can't add icon because Input 'object' not 'String' or 'ResourceLocation'");
+            } else if(Objects.equals(type, "item")) {
+                CompoundTag compoundTag = new CompoundTag();
+
+                if(object instanceof ItemStack itemStack)
+                    ResearchIconHelper.putItemIcon(compoundTag, itemStack);
+                else if(object instanceof Item item)
+                    ResearchIconHelper.putItemIcon(compoundTag, item);
+                else
+                    context.error("Can't add icon because Input 'object' not 'ItemStack' or 'Item'");
+
+                this.iconNbt = compoundTag;
+            } else {
+                context.error("Can't add icon because Input id is not are 'texture' or 'item'");
+            }
+
             return this;
         }
 
@@ -229,7 +253,7 @@ public class ResearchTreeBuilder {
             }
 
             baseResearch.setFunctions(onStartFunction, onEndFunction);
-
+            baseResearch.setIconNbt(iconNbt);
 
             baseResearch.showType = showType;
             baseResearch.hideTypeRender = hideTypeRender;
