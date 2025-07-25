@@ -18,7 +18,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
-import net.sixik.researchtree.api.FullCodecSerializer;
+import net.sixik.researchtree.api.interfaces.FullCodecSerializer;
+import net.sixik.researchtree.api.interfaces.TooltipSupport;
 import net.sixik.researchtree.client.ClientUtils;
 import net.sixik.researchtree.network.fromServer.SendCompleteResearchingS2C;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
@@ -306,7 +307,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
 
     public List<Component> getDescription() {
         if(cachedDescriptions.isEmpty()) {
-            cachedDescriptions = getDescriptionRaw().stream().map(str -> TextUtils.parseRawText(str, ClientUtils.holder())).collect(Collectors.toList());
+            cachedDescriptions = getDescriptionRaw().stream().map(str -> TextUtils.parseRawTextFromLocalization(str, ClientUtils.holder())).collect(Collectors.toList());
         }
 
         return cachedDescriptions;
@@ -462,12 +463,14 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
             CompoundTag d1 = new CompoundTag();
             d1.put(ModRegisters.ID_KEY, Codec.STRING.write(NbtOps.INSTANCE, requirement.getId()));
             d1.put(ModRegisters.DATA_KEY, requirement.codec().encodeStart(NbtOps.INSTANCE, requirement).getOrThrow());
+            d1.put(TooltipSupport.TOOLTIP_KEY, Codec.STRING.listOf().encodeStart(NbtOps.INSTANCE, requirement.getTooltipList()).getOrThrow());
             return d1;
         });
         NbtUtils.putList(nbt, REWARDS_KEY, getRewards(), (reward) -> {
             CompoundTag d1 = new CompoundTag();
             d1.put(ModRegisters.ID_KEY, Codec.STRING.write(NbtOps.INSTANCE, reward.getId()));
             d1.put(ModRegisters.DATA_KEY,reward.codec().encodeStart(NbtOps.INSTANCE, reward).getOrThrow());
+            d1.put(TooltipSupport.TOOLTIP_KEY, Codec.STRING.listOf().encodeStart(NbtOps.INSTANCE, reward.getTooltipList()).getOrThrow());
             return d1;
         });
         NbtUtils.putList(nbt, PARENTS_KEY, getParentResearchesIds(), (parentResearchesId) -> ResourceLocation.CODEC.encodeStart(NbtOps.INSTANCE, parentResearchesId).getOrThrow());
@@ -511,13 +514,17 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         NbtUtils.getList(nbt, REQUIREMENTS_KEY, tag -> {
             CompoundTag d1 = (CompoundTag) (tag);
             String key = Codec.STRING.decode(NbtOps.INSTANCE, d1.get(ModRegisters.ID_KEY)).getOrThrow().getFirst();
-            return ModRegisters.getRequirements(key).map(s -> s.decode(NbtOps.INSTANCE, d1.get(ModRegisters.DATA_KEY))).orElseThrow().getOrThrow().getFirst();
+            var data = ModRegisters.getRequirements(key).map(s -> s.decode(NbtOps.INSTANCE, d1.get(ModRegisters.DATA_KEY))).orElseThrow().getOrThrow().getFirst();
+            data.addTooltip(Codec.STRING.listOf().decode(NbtOps.INSTANCE, d1.get(TooltipSupport.TOOLTIP_KEY)).getOrThrow().getFirst());
+            return data;
         }, getRequirements());
 
         NbtUtils.getListWithClear(nbt, REWARDS_KEY, tag -> {
             CompoundTag d1 = (CompoundTag) (tag);
             String key = Codec.STRING.decode(NbtOps.INSTANCE, d1.get(ModRegisters.ID_KEY)).getOrThrow().getFirst();
-            return ModRegisters.getReward(key).map(s -> s.decode(NbtOps.INSTANCE, d1.get(ModRegisters.DATA_KEY))).orElseThrow().getOrThrow().getFirst();
+            Reward data = ModRegisters.getReward(key).map(s -> s.decode(NbtOps.INSTANCE, d1.get(ModRegisters.DATA_KEY))).orElseThrow().getOrThrow().getFirst();
+            data.addTooltip(Codec.STRING.listOf().decode(NbtOps.INSTANCE, d1.get(TooltipSupport.TOOLTIP_KEY)).getOrThrow().getFirst());
+            return data;
         }, getRewards());
 
         NbtUtils.getListWithClear(nbt, PARENTS_KEY,

@@ -4,9 +4,12 @@ import dev.ftb.mods.ftblibrary.ui.ScreenWrapper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
+import net.sixik.researchtree.api.managers.StageManager;
 import net.sixik.researchtree.client.ResearchScreen;
+import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchStage;
 import net.sixik.researchtree.research.manager.ClientResearchManager;
@@ -15,6 +18,9 @@ import net.sixik.researchtree.research.manager.ResearchManager;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
 import net.sixik.researchtree.research.requirements.Requirements;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public class ResearchUtils {
@@ -124,5 +130,75 @@ public class ResearchUtils {
             refundCount = 1;
         }
         return refundCount;
+    }
+
+    public static boolean addStage(ServerPlayer player, String stage) {
+        boolean valueAny = false;
+
+        for (StageManager stageManager : ModRegisters.getStageManagers()) {
+            if(stageManager.addStage(player, stage))
+                valueAny = true;
+        }
+
+        return valueAny;
+    }
+
+    public static boolean addStage(ServerPlayer player, Collection<String> stages) {
+        boolean valueAny = false;
+
+        for (StageManager stageManager : ModRegisters.getStageManagers()) {
+            if(stageManager.addStage(player, stages))
+                valueAny = true;
+
+        }
+
+        return valueAny;
+    }
+
+    public static boolean removeStage(ServerPlayer player, String stage) {
+        boolean valueAny = false;
+
+        for (StageManager stageManager : ModRegisters.getStageManagers()) {
+            if(stageManager.removeStage(player, stage))
+                valueAny = true;
+        }
+
+        return valueAny;
+    }
+
+    public static boolean removeStage(ServerPlayer player, Collection<String> stages) {
+        boolean valueAny = false;
+
+        for (StageManager stageManager : ModRegisters.getStageManagers()) {
+            if(stageManager.removeStage(player, stages))
+                valueAny = true;
+        }
+
+        return valueAny;
+    }
+
+    public static boolean hasStage(Player player, String stage) {
+        for (StageManager stageManager : ModRegisters.getStageManagers()) {
+            if(stageManager.hasStage(player, stage)) return true;
+        }
+
+        return false;
+    }
+
+    public static boolean hasStages(Player player, Collection<String> stage) {
+        for (StageManager stageManager : ModRegisters.getStageManagers()) {
+            if(stageManager.hasStages(player, stage)) return true;
+        }
+
+        return false;
+    }
+
+    public static Collection<String> getStages(Player player) {
+        List<String> stages = new ArrayList<>();
+        for (StageManager stageManager : ModRegisters.getStageManagers()) {
+            stages.addAll(stageManager.getStages(player));
+        }
+
+        return stages;
     }
 }

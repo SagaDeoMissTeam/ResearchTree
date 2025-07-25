@@ -8,7 +8,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
-import net.sixik.researchtree.api.FullCodecSerializer;
+import net.sixik.researchtree.api.interfaces.FullCodecSerializer;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchChangeType;
 import net.sixik.researchtree.utils.ResearchUtils;

@@ -1,4 +1,4 @@
-package net.sixik.researchtree.research.teams;
+package net.sixik.researchtree.api.managers;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;

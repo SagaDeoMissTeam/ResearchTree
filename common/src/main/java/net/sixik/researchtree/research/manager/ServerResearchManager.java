@@ -13,7 +13,7 @@ import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataS2C;
 import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
-import net.sixik.researchtree.research.teams.TeamManager;
+import net.sixik.researchtree.api.managers.TeamManager;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

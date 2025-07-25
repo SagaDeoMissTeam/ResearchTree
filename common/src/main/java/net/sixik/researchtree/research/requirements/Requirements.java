@@ -4,14 +4,15 @@ import com.mojang.serialization.Codec;
 import dev.ftb.mods.ftblibrary.util.TooltipList;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.entity.player.Player;
-import net.sixik.researchtree.api.TooltipSupport;
+import net.sixik.researchtree.api.interfaces.TooltipSupport;
 import net.sixik.researchtree.client.render.RenderTooltip;
 import net.sixik.researchtree.research.BaseResearch;
-import net.sixik.researchtree.research.sorter.Sorter;
 import net.sixik.researchtree.utils.ResearchRenderUtils;
 
 import java.util.ArrayList;
@@ -21,6 +22,8 @@ import java.util.Objects;
 public abstract class Requirements implements TooltipSupport {
 
     protected List<String> tooltips = new ArrayList<>();
+    private List<Component> cachedTooltips;
+
 
     public Requirements(Void v) {}
 
@@ -40,10 +43,6 @@ public abstract class Requirements implements TooltipSupport {
     public abstract int getCount();
     public abstract void setCount(int count);
 
-    public int sort(Sorter sorter) {
-        return 0;
-    }
-
     public boolean canMathOperation(Requirements requirements) {
         return Objects.equals(this.getClass(), requirements.getClass());
     }
@@ -51,7 +50,11 @@ public abstract class Requirements implements TooltipSupport {
     @Environment(EnvType.CLIENT)
     public void drawCustomTooltip(GuiGraphics graphics, int x, int y, RenderTooltip tooltip, TooltipList list) {
         addTooltip(list);
-        ResearchRenderUtils.drawTooltip(graphics, x,y, list, 200);
+        for (Component component : getTooltipReady(Minecraft.getInstance().level.registryAccess())) {
+            list.add(component);
+        }
+
+        ResearchRenderUtils.drawTooltip(graphics, x,y, list);
     }
 
     public abstract Requirements copy();
@@ -66,6 +69,14 @@ public abstract class Requirements implements TooltipSupport {
     @Override
     public List<String> getTooltipList() {
         return tooltips;
+    }
+
+    @Override
+    @Environment(EnvType.CLIENT)
+    public List<Component> getCachedTooltip() {
+        if(cachedTooltips == null)
+            cachedTooltips = getTooltipReady(Minecraft.getInstance().level.registryAccess());
+        return cachedTooltips;
     }
 }
 

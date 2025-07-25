@@ -113,14 +113,28 @@ public class ResearchTreeBuilder {
 
         @ZenCodeType.Method
         public ResearchBuilder addRequirement(String id, Object... arg) {
-            requirementBuilders.add(new RequirementBuilder(id, arg));
+            requirementBuilders.add(new RequirementBuilder(this, id, arg));
             return this;
         }
 
         @ZenCodeType.Method
         public ResearchBuilder addReward(String id, Object... arg) {
-            rewardBuilders.add(new RewardBuilder(id, arg));
+            rewardBuilders.add(new RewardBuilder(this, id, arg));
             return this;
+        }
+
+        @ZenCodeType.Method
+        public RequirementBuilder addRequirementBuilder(String id, Object... arg) {
+            RequirementBuilder t = new RequirementBuilder(this, id, arg);
+            requirementBuilders.add(t);
+            return t;
+        }
+
+        @ZenCodeType.Method
+        public RewardBuilder addRewardBuilder(String id, Object... arg) {
+            var t = new RewardBuilder(this, id, arg);
+            rewardBuilders.add(t);
+            return t;
         }
 
         @ZenCodeType.Method
@@ -232,6 +246,7 @@ public class ResearchTreeBuilder {
             return this;
         }
 
+
         protected BaseResearch complete() {
             BaseResearch baseResearch = new BaseResearch(researchId, iconId);
             baseResearch.setDescriptionRaw(descriptions);
@@ -266,13 +281,29 @@ public class ResearchTreeBuilder {
         }
     }
 
+    @ZenRegister
+    @ZenCodeType.Name("mods.researchtree.RequirementBuilder")
     public class RequirementBuilder {
         protected String id;
         protected Object[] arg;
+        protected List<String> tooltip = new ArrayList<>();
+        private final ResearchBuilder builder;
 
-        public RequirementBuilder(String id, Object... arg) {
+        public RequirementBuilder(ResearchBuilder builder, String id, Object... arg) {
             this.id = id;
             this.arg = arg;
+            this.builder = builder;
+        }
+
+        @ZenCodeType.Method
+        public RequirementBuilder addTooltip(String... str) {
+            tooltip.addAll(Arrays.asList(str));
+            return this;
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder end() {
+            return builder;
         }
 
         protected Optional<Requirements> complete() {
@@ -295,6 +326,8 @@ public class ResearchTreeBuilder {
             try {
                 Constructor<? extends Requirements> d1 = created.getClass().getConstructor(classes);
                 reward = d1.newInstance(arg);
+                if(!tooltip.isEmpty())
+                    reward.addTooltip(tooltip);
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                      IllegalAccessException e) {
                 context.error(e.getMessage());
@@ -304,13 +337,29 @@ public class ResearchTreeBuilder {
         }
     }
 
+    @ZenRegister
+    @ZenCodeType.Name("mods.researchtree.RewardBuilder")
     public class RewardBuilder {
         protected String id;
         protected Object[] arg;
+        protected List<String> tooltip = new ArrayList<>();
+        private final ResearchBuilder builder;
 
-        public RewardBuilder(String id, Object... arg) {
+        public RewardBuilder(ResearchBuilder builder, String id, Object... arg) {
             this.id = id;
             this.arg = arg;
+            this.builder = builder;
+        }
+
+        @ZenCodeType.Method
+        public RewardBuilder addTooltip(String... str) {
+            tooltip.addAll(Arrays.asList(str));
+            return this;
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder end() {
+            return builder;
         }
 
         protected Optional<Reward> complete() {
@@ -333,6 +382,9 @@ public class ResearchTreeBuilder {
             try {
                 Constructor<? extends Reward> d1 = created.getClass().getConstructor(classes);
                 reward = d1.newInstance(arg);
+
+                if(!tooltip.isEmpty())
+                    reward.addTooltip(tooltip);
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                      IllegalAccessException e) {
                 context.error(e.getMessage());

@@ -1,4 +1,4 @@
-package net.sixik.researchtree.api;
+package net.sixik.researchtree.api.interfaces;
 
 import com.mojang.serialization.Codec;
 

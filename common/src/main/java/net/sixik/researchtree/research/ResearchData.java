@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.sixik.researchtree.ResearchTree;
-import net.sixik.researchtree.api.FullCodecSerializer;
+import net.sixik.researchtree.api.interfaces.FullCodecSerializer;
 import net.sixik.researchtree.network.fromServer.SendResearchesS2C;
 import net.sixik.researchtree.research.listener.ResearchEvent;
 import net.sixik.researchtree.research.listener.ResearchEventType;

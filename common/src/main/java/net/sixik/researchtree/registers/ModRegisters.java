@@ -2,7 +2,9 @@ package net.sixik.researchtree.registers;
 
 import com.mojang.serialization.Codec;
 import dev.architectury.platform.Platform;
+import net.sixik.researchtree.api.managers.StageManager;
 import net.sixik.researchtree.compat.ftbteams.FTBTeamManager;
+import net.sixik.researchtree.compat.kubejs.KubeJSStageManager;
 import net.sixik.researchtree.research.functions.BaseFunction;
 import net.sixik.researchtree.research.functions.CommandFunction;
 import net.sixik.researchtree.research.functions.ScriptFunction;
@@ -10,7 +12,7 @@ import net.sixik.researchtree.research.requirements.ItemRequirements;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.ItemReward;
 import net.sixik.researchtree.research.rewards.Reward;
-import net.sixik.researchtree.research.teams.TeamManager;
+import net.sixik.researchtree.api.managers.TeamManager;
 
 import java.util.*;
 import java.util.function.Function;
@@ -28,6 +30,11 @@ public class ModRegisters {
     private static final Map<String, Function<Void, Reward>> REWARDS_FUNC = new HashMap<>();
     private static final List<Supplier<TeamManager>> TEAM_MANAGERS = new ArrayList<>();
     private static final Map<String, Supplier<BaseFunction>> FUNCTION_MAP = new HashMap<>();
+    private static final List<StageManager> STAGE_MANAGERS = new ArrayList<>();
+
+    public static void registerStageManager(Supplier<StageManager> managerSupplier) {
+        STAGE_MANAGERS.add(managerSupplier.get());
+    }
 
     public static void registerFunction(Supplier<BaseFunction> functionSupplier) {
         BaseFunction function = functionSupplier.get();
@@ -74,6 +81,10 @@ public class ModRegisters {
         return Optional.ofNullable(FUNCTION_MAP.get(functionId));
     }
 
+    public static List<StageManager> getStageManagers() {
+        return STAGE_MANAGERS;
+    }
+
     public static List<Supplier<TeamManager>> getTeamManagers() {
         return new ArrayList<>(TEAM_MANAGERS);
     }
@@ -81,6 +92,10 @@ public class ModRegisters {
     public static void init() {
         registerRequirement(ItemRequirements::new);
         registerReward(ItemReward::new);
+
+        if(Platform.isModLoaded("kubejs")) {
+            registerStageManager(KubeJSStageManager::new);
+        }
 
         if(Platform.isModLoaded("ftbteams")) {
             registerTeamManager(FTBTeamManager::new);

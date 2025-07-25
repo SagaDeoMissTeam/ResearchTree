@@ -34,13 +34,13 @@ public record SendCancelResearchC2S(ResourceLocation researchId, ResourceLocatio
         Optional<ResearchData> researchDataOpt = manager.getResearchData(message.researchDataId);
 
         if(researchDataOpt.isEmpty()) {
-            ClientDebugUtils.log("Research Data [{}] Not Found!", message.researchDataId);
+            ClientDebugUtils.log("Research Data [%s%] Not Found!", message.researchDataId);
             return;
         }
         ResearchData researchData = researchDataOpt.get();
         Optional<BaseResearch> researchBaseOnServer = researchData.getResearchList().stream().filter(data -> data.getId().equals(message.researchId)).findFirst();
         if(researchBaseOnServer.isEmpty()) {
-            ClientDebugUtils.log("Research [{}] Not found!", message.researchId);
+            ClientDebugUtils.log("Research [%s%] Not found!", message.researchId);
             return;
         }
 

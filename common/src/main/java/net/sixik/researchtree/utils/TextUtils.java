@@ -2,6 +2,7 @@ package net.sixik.researchtree.utils;
 
 import com.google.gson.JsonParseException;
 import dev.ftb.mods.ftblibrary.util.client.ClientTextComponentUtils;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -27,6 +28,22 @@ public class TextUtils {
      */
     public static Component parseRawText(String str, HolderLookup.Provider provider) {
         String str2 = str.trim();
+        if (str2.startsWith("[") && str2.endsWith("]") || str2.startsWith("{") && str2.endsWith("}")) {
+            // could be JSON raw text, but not for definite...
+            try {
+                MutableComponent res = Component.Serializer.fromJson(UNESCAPER.translate(str2), provider);
+                if (res != null) {
+                    return res;
+                }
+            } catch (JsonParseException ignored) {
+            }
+        }
+        return ClientTextComponentUtils.parse(UNESCAPER.translate(str));
+    }
+
+    public static Component parseRawTextFromLocalization(String str, HolderLookup.Provider provider) {
+        String str2 = str.trim();
+        str = I18n.get(str2);
         if (str2.startsWith("[") && str2.endsWith("]") || str2.startsWith("{") && str2.endsWith("}")) {
             // could be JSON raw text, but not for definite...
             try {

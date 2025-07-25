@@ -5,7 +5,7 @@ import dev.ftb.mods.ftbteams.api.Team;
 import dev.ftb.mods.ftbteams.data.PlayerTeam;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
-import net.sixik.researchtree.research.teams.TeamManager;
+import net.sixik.researchtree.api.managers.TeamManager;
 
 import java.util.*;
 

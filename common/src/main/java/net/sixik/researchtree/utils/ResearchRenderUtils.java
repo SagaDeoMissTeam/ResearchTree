@@ -27,6 +27,10 @@ public class ResearchRenderUtils {
         ResearchInfoPanel.LINE_COLOR.draw(graphics, x, y, w, h);
     }
 
+    public static void drawTooltip(GuiGraphics graphics, int mouseX, int mouseY, TooltipList tooltipList) {
+        drawTooltip(graphics,mouseX,mouseY,tooltipList, 200);
+    }
+
     public static void drawTooltip(GuiGraphics graphics, int mouseX, int mouseY, TooltipList tooltipList, int zBuffer) {
         graphics.pose().translate(0.0F, 0.0F, zBuffer);
         graphics.setColor(1.0F, 1.0F, 1.0F, 0.8F);

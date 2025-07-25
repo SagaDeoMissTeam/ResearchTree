@@ -13,9 +13,8 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import net.sixik.researchtree.api.FullCodecSerializer;
+import net.sixik.researchtree.api.interfaces.FullCodecSerializer;
 import net.sixik.researchtree.research.ResearchData;
-import net.sixik.researchtree.utils.ResearchUtils;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
