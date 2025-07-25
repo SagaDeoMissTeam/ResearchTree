@@ -124,14 +124,15 @@ public class ItemRequirements extends Requirements {
     }
 
     @Override
-    public Codec<ItemRequirements> codec() {
+    public Codec<? extends Requirements> codec() {
         return CODEC;
     }
 
     @Override
-    public StreamCodec<RegistryFriendlyByteBuf, ItemRequirements> streamCodec() {
+    public StreamCodec<RegistryFriendlyByteBuf, ? extends Requirements> streamCodec() {
         return STREAM_CODEC;
     }
+
 
     @Override
     public String getId() {

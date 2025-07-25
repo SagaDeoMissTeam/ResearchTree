@@ -62,6 +62,8 @@ public abstract class Requirements implements TooltipSupport {
     public abstract <T extends Requirements> Codec<T> codec();
     public abstract <T extends Requirements> StreamCodec<RegistryFriendlyByteBuf, T> streamCodec();
 
+
+
     public String getId() {
         return this.getClass().getName();
     }

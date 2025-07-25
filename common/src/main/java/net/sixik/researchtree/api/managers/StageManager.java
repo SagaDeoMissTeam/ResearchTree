@@ -2,7 +2,6 @@ package net.sixik.researchtree.api.managers;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.sixik.researchtree.registers.ModRegisters;
 
 import java.util.Collection;
 

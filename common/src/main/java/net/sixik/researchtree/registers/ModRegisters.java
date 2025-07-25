@@ -10,9 +10,12 @@ import net.sixik.researchtree.research.functions.CommandFunction;
 import net.sixik.researchtree.research.functions.ScriptFunction;
 import net.sixik.researchtree.research.requirements.ItemRequirements;
 import net.sixik.researchtree.research.requirements.Requirements;
+import net.sixik.researchtree.research.requirements.StageRequirements;
+import net.sixik.researchtree.research.rewards.CommandReward;
 import net.sixik.researchtree.research.rewards.ItemReward;
 import net.sixik.researchtree.research.rewards.Reward;
 import net.sixik.researchtree.api.managers.TeamManager;
+import net.sixik.researchtree.research.rewards.StageReward;
 
 import java.util.*;
 import java.util.function.Function;
@@ -91,7 +94,10 @@ public class ModRegisters {
 
     public static void init() {
         registerRequirement(ItemRequirements::new);
+        registerRequirement(StageRequirements::new);
         registerReward(ItemReward::new);
+        registerReward(StageReward::new);
+        registerReward(CommandReward::new);
 
         if(Platform.isModLoaded("kubejs")) {
             registerStageManager(KubeJSStageManager::new);

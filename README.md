@@ -66,20 +66,23 @@ After creating the research tree, localization keys are generated for the title 
 The ID of the elements to add to the study using `addRequirement` and `addReward`
 
 ### Requirements
-| Id               | Arguments | Description                         |
-|------------------|-----------|-------------------------------------|
-| item_requirement | ItemStack | Requirements in the form of an item |
+| Id                | Arguments | Description                          |
+|-------------------|-----------|--------------------------------------|
+| item_requirement  | ItemStack | Requirements in the form of an item  |
+| stage_requirement | String    | Requirements in the form of an stage |
 
 ### Rewards
-| Id          | Arguments | Description                   |
-|-------------|-----------|-------------------------------|
-| item_reward | ItemStack | Reward in the form of an item |
+| Id             | Arguments | Description                                        |
+|----------------|-----------|----------------------------------------------------|
+| item_reward    | ItemStack | Reward in the form of an item                      |
+| command_reward | String    | Reward in the form of an command. Support {player} |
+| stage_reward   | String    | Reward in the form of an stage                     |
 
 ### Functions
 
-| Id      | Arguments         | Description                                                                                                   |
-|---------|-------------------|---------------------------------------------------------------------------------------------------------------|
-| command | command as String | Execute the specified command. If you need to specify a player, use {player} `"/say {player} hello player !"` |
+| Id      | Arguments         | Description                                                                                                                     |
+|---------|-------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| command | command as String | Execute the specified command. Support {player}. If you need to specify a player, use {player} `"/say {player} hello player !"` |
 
 ### FunctionStage
 
