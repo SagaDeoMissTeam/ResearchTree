@@ -14,6 +14,7 @@ dependencies {
     modApi "curse.maven:crafttweaker-239197:6434161"
     modApi "curse.maven:sdm-ui-lib-1095061:6515615"
 
+    modApi "curse.maven:ftb-quests-forge-289412:6721642"
     modApi "curse.maven:sdm-economy-1102542:6770946"
     modApi "dev.ftb.mods:ftb-teams:2101.1.2"
 

@@ -3,6 +3,10 @@ package net.sixik.researchtree.registers;
 import com.mojang.serialization.Codec;
 import dev.architectury.platform.Platform;
 import net.sixik.researchtree.api.managers.StageManager;
+import net.sixik.researchtree.compat.ftbquests.FTBQuestsFunction;
+import net.sixik.researchtree.compat.ftbquests.FTBQuestsRequirements;
+import net.sixik.researchtree.compat.ftbquests.FTBQuestsReward;
+import net.sixik.researchtree.compat.ftbquests.FTBQuestsTrigger;
 import net.sixik.researchtree.compat.ftbteams.FTBTeamManager;
 import net.sixik.researchtree.compat.kubejs.KubeJSStageManager;
 import net.sixik.researchtree.research.functions.BaseFunction;
@@ -118,6 +122,13 @@ public class ModRegisters {
             registerTeamManager(FTBTeamManager::new);
         }
 
+        if(Platform.isModLoaded("ftbquests")) {
+            registerRequirement(FTBQuestsRequirements::new);
+            registerReward(FTBQuestsReward::new);
+            registerFunction(FTBQuestsFunction::new);
+            registerTrigger(FTBQuestsTrigger::new);
+        }
+
         registerFunction(CommandFunction::new);
         registerFunction(ScriptFunction::new);
 
@@ -127,6 +138,7 @@ public class ModRegisters {
         registerTrigger(MobKillTrigger::new);
         registerTrigger(CustomTrigger::new);
         registerTrigger(PlayerStatsTrigger::new);
+
     }
 
 }

@@ -57,6 +57,11 @@ public class LocateTrigger extends BaseTrigger{
                 BlockPos owner = (BlockPos) opt.get();
                 return pos.getX() == owner.getX() && pos.getY() == owner.getY() && pos.getZ() == owner.getZ();
             }
+//            case FEATURE -> {
+//                if(player instanceof ServerPlayer serverPlayer) {
+////                    serverPlayer.serverLevel().getPoiManager().f
+//                }
+//            }
         }
 
 
@@ -74,6 +79,11 @@ public class LocateTrigger extends BaseTrigger{
                     return Optional.of(ResourceKey.create(Registries.STRUCTURE, rs));
                 }
             }
+//            case FEATURE -> {
+//                if(arg instanceof ResourceLocation rs) {
+//                    return Optional.of(ResourceKey.create(Registries.FEATURE, rs));
+//                }
+//            }
             case POSITION -> {
                 if(arg instanceof BlockPos)
                     return Optional.of(arg);

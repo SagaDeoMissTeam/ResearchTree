@@ -24,7 +24,7 @@ public class CommandFunction extends BaseFunction{
     @Override
     public boolean checkErrors(ScriptContext context, Object... args) {
         if(!(args[0] instanceof String)) {
-            context.error("Wrong argument 1. Expected 'String and got '" + args[0].getClass().getName() + "'");
+            context.error("Wrong argument 1. Expected 'String' and got '" + args[0].getClass().getName() + "'");
             return false;
         }
 

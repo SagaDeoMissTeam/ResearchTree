@@ -4,5 +4,6 @@ public enum LocateType {
     DIMENSION,
     BIOME,
     STRUCTURE,
-    POSITION
+    POSITION,
+//    FEATURE
 }

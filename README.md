@@ -11,6 +11,7 @@ ResearchTreeMod - The mod adds a research tree to the game, which will be useful
 - CraftTweaker
 - KubeJS
 - FTB Teams
+- FTB Quests
 
 # For Modpack Developers
 To create your own research trees, you can use scripts for 2 mods. (CraftTweaker, KubeJS) </br>
@@ -85,17 +86,19 @@ After creating the research tree, localization keys are generated for the title 
 The ID of the elements to add to the study using `addRequirement` and `addReward`
 
 ### Requirements
-| Id                | Arguments | Description                          |
-|-------------------|-----------|--------------------------------------|
-| item_requirement  | ItemStack | Requirements in the form of an item  |
-| stage_requirement | String    | Requirements in the form of an stage |
+| Id                    | Arguments | Description                          |
+|-----------------------|-----------|--------------------------------------|
+| item_requirement      | ItemStack | Requirements in the form of an item  |
+| stage_requirement     | String    | Requirements in the form of an stage |
+| ftbquests_requirement | Long      | Requirements in the form of an quest |
 
 ### Rewards
-| Id             | Arguments | Description                                        |
-|----------------|-----------|----------------------------------------------------|
-| item_reward    | ItemStack | Reward in the form of an item                      |
-| command_reward | String    | Reward in the form of an command. Support {player} |
-| stage_reward   | String    | Reward in the form of an stage                     |
+| Id               | Arguments | Description                                        |
+|------------------|-----------|----------------------------------------------------|
+| item_reward      | ItemStack | Reward in the form of an item                      |
+| command_reward   | String    | Reward in the form of an command. Support {player} |
+| stage_reward     | String    | Reward in the form of an stage                     |
+| ftbquests_reward | Long      | Reward in the form of an quest                     |
 
 ### Triggers
 
@@ -106,6 +109,7 @@ The ID of the elements to add to the study using `addRequirement` and `addReward
 | locate_trigger      | LocateType(Id), LocateType(Arguments)                             | It is executed when the player is in the specified location.      |                                                                                                                                                                                    |
 | entity_kill_trigger | entityId as ResourceLocation                                      | Executed when the player kills a mob                              |                                                                                                                                                                                    |
 | player_stat_trigger | id as ResourceLocation, value as int, object as Object (Optional) | Executed when the player has N stats values.                      | addTrigger("player_stat_trigger", `<resource:minecraft:leave_game>`, 20); </br> addTrigger("player_stat_trigger", `<resource:minecraft:broken>`, 20, `<item:minecraft:iron_axe>`); |
+| ftbquests_trigger   | questsId as long                                                  | Execute when quests complete                                      |                                                                                                                                                                                    |
 
 ### Functions
 
