@@ -1,10 +1,20 @@
 package net.sixik.researchtree.research.manager;
 
+import dev.architectury.event.EventResult;
+import dev.architectury.event.events.common.BlockEvent;
+import dev.architectury.event.events.common.EntityEvent;
 import dev.architectury.event.events.common.TickEvent;
+import dev.architectury.utils.value.IntValue;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.LevelResource;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.ResearchTreeBuilder;
@@ -15,6 +25,7 @@ import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.api.managers.TeamManager;
 import net.sixik.researchtree.research.triggers.BaseTrigger;
+import net.sixik.researchtree.research.triggers.EventType;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +46,7 @@ public class ServerResearchManager extends ResearchManager {
 
     private volatile boolean shutdown = false;
     private final ExecutorService executor;
+    private final ExecutorService triggerExecutor;
     private final MinecraftServer server;
     private final BlockingQueue<Runnable> tasks;
 
@@ -44,6 +56,7 @@ public class ServerResearchManager extends ResearchManager {
 
     public ServerResearchManager(MinecraftServer server) {
         super(LOGGER);
+        this.researchesData = new ConcurrentHashMap<>();
         this.server = server;
         this.tasks = new LinkedBlockingQueue<>();
         this.executor = Executors.newSingleThreadExecutor(r -> {
@@ -51,8 +64,11 @@ public class ServerResearchManager extends ResearchManager {
             thread.setDaemon(true);
             return thread;
         });
-
-        this.researchesData = new ConcurrentHashMap<>();
+        this.triggerExecutor = Executors.newSingleThreadExecutor(r -> {
+            Thread thread = new Thread(r, "ServerResearchManagerTrigger");
+            thread.setDaemon(true);
+            return thread;
+        });
         INSTANCE = this;
 
         if(ResearchTree.MOD_CONFIG.getAsyncResearchManager())
@@ -72,9 +88,39 @@ public class ServerResearchManager extends ResearchManager {
             }
         }
 
+        registerEvents();
         loadTeamManagers();
         loadPlayerData(server.getWorldPath(LevelResource.ROOT).resolve("research_tree"), "player_data.nbt");
     }
+
+    public void registerEvents() {
+        if(!ResearchTree.MOD_CONFIG.getEnableTriggers()) return;
+        if(ResearchTree.MOD_CONFIG.getAsyncTrigger()) {
+            TickEvent.PLAYER_POST.register(this::playerTickAsync);
+            EntityEvent.LIVING_DEATH.register(this::entityDieAsync);
+            BlockEvent.BREAK.register(this::breakBlockAsync);
+        } else {
+            TickEvent.PLAYER_POST.register(this::playerTick);
+            EntityEvent.LIVING_DEATH.register(this::entityDie);
+            BlockEvent.BREAK.register(this::breakBlock);
+        }
+
+    }
+
+    public void unRegisterEvents() {
+        if(!ResearchTree.MOD_CONFIG.getEnableTriggers()) return;
+        if(ResearchTree.MOD_CONFIG.getAsyncTrigger()) {
+            TickEvent.PLAYER_POST.unregister(this::playerTickAsync);
+            EntityEvent.LIVING_DEATH.unregister(this::entityDieAsync);
+            BlockEvent.BREAK.unregister(this::breakBlockAsync);
+        } else {
+            TickEvent.PLAYER_POST.unregister(this::playerTick);
+            EntityEvent.LIVING_DEATH.unregister(this::entityDie);
+            BlockEvent.BREAK.unregister(this::breakBlock);
+        }
+    }
+
+
 
     public void loadTeamManagers() {
         ModRegisters.getTeamManagers().forEach(s -> teamManagers.add(s.get()));
@@ -124,8 +170,20 @@ public class ServerResearchManager extends ResearchManager {
             Thread.currentThread().interrupt();
             LOGGER.error("Interrupted during ResearchManager shutdown", e);
         }
-        savePlayerData(server.getWorldPath(LevelResource.ROOT).resolve("research_tree"), "player_data.nbt");
+        triggerExecutor.shutdown();
+        try {
+            if (!triggerExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                triggerExecutor.shutdownNow();
+                LOGGER.warn("ResearchManagerTrigger executor did not terminate gracefully");
+            }
+        } catch (InterruptedException e) {
+            triggerExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+            LOGGER.error("Interrupted during ResearchManagerTrigger shutdown", e);
+        }
 
+        savePlayerData(server.getWorldPath(LevelResource.ROOT).resolve("research_tree"), "player_data.nbt");
+        unRegisterEvents();
         INSTANCE = null;
     }
 
@@ -345,20 +403,59 @@ public class ServerResearchManager extends ResearchManager {
         }).isPresent();
     }
 
-    public void tickTriggersLimit(Player player, Object... args) {
+    public void tickTriggersLimit(EventType eventType, Player player, Object... args) {
         if(player.level().getGameTime() % ResearchTree.MOD_CONFIG.getTickCheck() == 0) {
-            tickTriggers(player, args);
+            tickTriggers(eventType, player, args);
         }
     }
 
-    public void tickTriggers(Player player, Object... args) {
+    public void tickTriggers(EventType eventType, Player player, Object... args) {
         getPlayerDataOptional(player).ifPresent(playerResearchData -> {
             for (BaseResearch baseResearch : playerResearchData.getCachedUnlockedResearchesOrCreate(this, player)) {
                 for (BaseTrigger trigger : baseResearch.getTriggers()) {
+                    if(trigger.getEventType() != eventType) continue;
                     if(baseResearch.isTriggerComplete(player, trigger)) continue;
                     trigger.executeInternal(this, playerResearchData, baseResearch, player, args);
                 }
             }
+        });
+    }
+
+    private EventResult entityDie(LivingEntity livingEntity, DamageSource damageSource) {
+        if (damageSource.getDirectEntity() instanceof ServerPlayer serverPlayer) {
+            tickTriggers(EventType.MOB_KILL, serverPlayer, (Entity) livingEntity);
+        }
+        return EventResult.interruptDefault();
+    }
+
+    private EventResult breakBlock(Level level, BlockPos blockPos, BlockState blockState, ServerPlayer serverPlayer, @Nullable IntValue intValue) {
+        tickTriggers(EventType.BLOCK_BREAK, serverPlayer, blockState);
+        return EventResult.interruptDefault();
+    }
+
+    private void playerTick(Player player) {
+        tickTriggersLimit(EventType.PLAYER_TICK, player);
+    }
+
+    private EventResult entityDieAsync(LivingEntity livingEntity, DamageSource damageSource) {
+        executor.submit(() -> {
+            if (damageSource.getDirectEntity() instanceof ServerPlayer serverPlayer) {
+                tickTriggers(EventType.MOB_KILL, serverPlayer, (Entity) livingEntity);
+            }
+        });
+        return EventResult.interruptDefault();
+    }
+
+    private EventResult breakBlockAsync(Level level, BlockPos blockPos, BlockState blockState, ServerPlayer serverPlayer, @Nullable IntValue intValue) {
+        executor.submit(() -> {
+            tickTriggers(EventType.BLOCK_BREAK, serverPlayer, blockState);
+        });
+        return EventResult.interruptDefault();
+    }
+
+    private void playerTickAsync(Player player) {
+        executor.submit(() -> {
+            tickTriggersLimit(EventType.PLAYER_TICK, player);
         });
     }
 }

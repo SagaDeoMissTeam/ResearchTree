@@ -43,7 +43,7 @@ public class MobKillTrigger extends BaseTrigger{
 
     @Override
     public String getId() {
-        return "entity_kill_task";
+        return "entity_kill_trigger";
     }
 
     @Override

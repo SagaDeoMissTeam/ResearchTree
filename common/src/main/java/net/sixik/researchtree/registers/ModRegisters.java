@@ -126,6 +126,7 @@ public class ModRegisters {
         registerTrigger(LocateTrigger::new);
         registerTrigger(MobKillTrigger::new);
         registerTrigger(CustomTrigger::new);
+        registerTrigger(PlayerStatsTrigger::new);
     }
 
 }
