@@ -48,7 +48,6 @@ public class ServerResearchManager extends ResearchManager {
     private final ExecutorService executor;
     private final ExecutorService triggerExecutor;
     private final MinecraftServer server;
-    private final BlockingQueue<Runnable> tasks;
 
     protected ConcurrentHashMap<ResourceLocation, ResearchData> researchesData;
     protected CopyOnWriteArrayList<PlayerResearchData.PlayerOfflineData> offlineData = new CopyOnWriteArrayList<>();
@@ -58,7 +57,6 @@ public class ServerResearchManager extends ResearchManager {
         super(LOGGER);
         this.researchesData = new ConcurrentHashMap<>();
         this.server = server;
-        this.tasks = new LinkedBlockingQueue<>();
         this.executor = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "ServerResearchManager");
             thread.setDaemon(true);
@@ -135,23 +133,11 @@ public class ServerResearchManager extends ResearchManager {
                         researchesData.putAll(ResearchTreeBuilder.DATA_BUILDER);
                         ResearchTreeBuilder.DATA_BUILDER.clear();
                     }
-
-
-                    Runnable task = tasks.take();
-                    if (!shutdown) {
-                        task.run();
-                    }
                     tickResearchData();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    LOGGER.info("ServerResearchManager thread interrupted, shutting down");
-                    break;
                 } catch (Exception e) {
                     LOGGER.error("Error processing research task", e);
                 }
             }
-
-            tasks.clear();
         });
     }
 

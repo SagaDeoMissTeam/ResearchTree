@@ -47,6 +47,7 @@ public class ResearchMovePanel extends Panel {
     public void onResearchChange(ResourceLocation researchId, ResearchChangeType type) {
         if(type == ResearchChangeType.ADD_RESEARCH) {
             findResearchWidget(researchId).ifPresent(rs -> ResearchScreen.Instance.onResearchComplete(rs));
+            updateRenderData();
         }
     }
 
@@ -340,6 +341,19 @@ public class ResearchMovePanel extends Panel {
         }
 
         // Шаг 4: Обновляем связи для renderData
+        updateRenderData(widgets);
+
+        boundsDirty = true;
+    }
+
+    public void updateRenderData() {
+        updateRenderData(getWidgets().stream()
+                .filter(w -> w instanceof ResearchWidget)
+                .map(v -> (ResearchWidget)v)
+                .toList());
+    }
+
+    public void updateRenderData(List<ResearchWidget> widgets) {
         renderData.clear();
         for (ResearchWidget widget : widgets) {
             if (widget.research.shouldRenderConnection) {
@@ -353,8 +367,6 @@ public class ResearchMovePanel extends Panel {
                 renderData.add(connection);
             }
         }
-
-        boundsDirty = true;
     }
 
     /**

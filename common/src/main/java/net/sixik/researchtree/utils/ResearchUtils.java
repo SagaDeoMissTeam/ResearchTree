@@ -46,6 +46,10 @@ public class ResearchUtils {
         return getManager(isClient).getOrCreatePlayerData(player).hasResearch(research.getId());
     }
 
+    public static boolean isLockedResearch(Player player, BaseResearch research, boolean isClient) {
+        return getResearchStage(player,research,isClient) == ResearchStage.LOCKED;
+    }
+
     public static boolean isStartResearch(Player player, BaseResearch research, boolean isClient) {
         return getResearchStage(player, research, isClient) == ResearchStage.START_RESEARCH;
     }

@@ -11,6 +11,7 @@ public interface RenderIcon {
     Icon WIREFRAME_GLOBE = getIcon("wireframe-globe");
     Icon OPEN_BOOK = getIcon("open-book");
     Icon CONFIRM = getIcon("confirmed");
+    Icon UNKNOWN = getIcon("uncertainty");
 
 
     static Icon getIcon(String id) {

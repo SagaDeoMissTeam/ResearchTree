@@ -1,6 +1,6 @@
 # ResearchTreeMod
 
-ResearchTreeMod - The mod adds a research tree to the game, which will be useful for developers who want to make a step-by-step development.
+ResearchTreeMod - The mod adds a research tree to the game, which will be useful for developers who want to make a step-by-step progression.
 
 ## Features
 - Async Logic
@@ -55,7 +55,6 @@ After creating the research tree, localization keys are generated for the title 
 | researchTime             | time as long                                                            |                    | The time in milliseconds required for research. The default value is -1. If -1 then the time will be taken from the config | researchTime(50_000);                                                                                                                       |
 | shouldRenderConnection   | value as bool                                                           |                    | Whether to render display dependence on parents                                                                            | shouldRenderConnection(false);                                                                                                              |
 | refundPercent            | percent as double                                                       |                    | How many resources will be returned if the study is canceled. By default, it takes the value from the config               | refundPercent(57.5d);                                                                                                                       |
-| showType                 | index as ResearchShowType                                               |                    | Research Rendering Conditions                                                                                              | showType(0);                                                                                                                                |
 | hideTypeRender           | index as ResearchHideTypeRender                                         |                    | The type of render when the ResearchShowType condition is met                                                              | hideTypeRender(0);                                                                                                                          |
 | addFunctionOnStart       | executeStage as int, functionId as String, args as Object[]             |                    | Adds a function that will be performed at the beginning of the study                                                       | addFunctionOnStart(1,"command", "/time set day");                                                                                           |
 | addFunctionOnEnd         | executeStage as int, functionId as String, args as Object[]             |                    | Adds a function that will be performed at the end of the study                                                             | addFunctionOnEnd(0,"command", "/time set day");                                                                                             |
@@ -136,7 +135,7 @@ Responsible for how the rendering will take place if the research is hidden
 | 2     | Completely hidden. Not visible until the conditions are met                            |
 | 3     | The study has an icon and text visible, but it will be slightly dim and not clickable. |
 
-### ResearchShowType
+### ResearchShowType (WIP)
 Responsible for the display conditions
 
 | index | Description                                                 |

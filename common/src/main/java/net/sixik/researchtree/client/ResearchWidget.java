@@ -1,5 +1,7 @@
 package net.sixik.researchtree.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.ui.Panel;
 import dev.ftb.mods.ftblibrary.ui.SimpleTextButton;
@@ -10,6 +12,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.sixik.researchtree.client.widgets.ProgressBarWidget;
 import net.sixik.researchtree.research.BaseResearch;
+import net.sixik.researchtree.research.ResearchHideTypeRender;
+import net.sixik.researchtree.research.ResearchShowType;
+import net.sixik.researchtree.research.ResearchStage;
 import net.sixik.researchtree.research.manager.PlayerResearchData;
 import net.sixik.researchtree.utils.RenderIcon;
 import net.sixik.researchtree.utils.ResearchUtils;
@@ -27,6 +32,9 @@ public class ResearchWidget extends SimpleTextButton {
     public boolean researched;
     public boolean canResearch;
     protected ProgressBarWidget progressBar;
+    public ResearchStage researchStage;
+
+    public HideRender hideRender = HideRender.NORMAL;
 
     public ResearchWidget(Panel panel, BaseResearch research) {
         this(panel, Component.empty(), Icon.empty());
@@ -51,6 +59,47 @@ public class ResearchWidget extends SimpleTextButton {
     public void update() {
         this.researched = isResearchedUnCached();
         this.canResearch = ResearchUtils.isResearchParentsResearched(Minecraft.getInstance().player, research, true);
+        this.researchStage = ResearchUtils.getResearchStage(Minecraft.getInstance().player, research, true);
+
+        if(this.researchStage == ResearchStage.LOCKED) {
+
+            switch (research.hideTypeRender) {
+                case QUESTION_STYLE -> {
+                    this.icon = RenderIcon.UNKNOWN;
+                    this.title = Component.literal("???");
+                }
+                case BLACKOUT_STYLE -> {
+                    this.icon = this.icon.withColor(Color4I.BLACK);
+                    this.title = Component.literal("???");
+                }
+                case HIDE_STYLE -> {
+                   this.hideRender = HideRender.HIDDEN;
+                }
+                case EMPTY -> {
+                    this.hideRender = HideRender.ALPHA;
+                }
+            }
+        } else {
+            this.title = research.getTranslate();
+            this.icon = research.getIcon();
+            this.hideRender = HideRender.NORMAL;
+        }
+    }
+
+    @Override
+    public void draw(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
+        if(hideRender == HideRender.ALPHA) {
+//            RenderSystem.enableBlend();
+//            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1,1,1, 0.5f);
+            super.draw(graphics, theme, x, y, w, h);
+            RenderSystem.setShaderColor(1,1,1,1);
+//            RenderSystem.disableBlend();
+        } else {
+            super.draw(graphics, theme, x, y, w, h);
+        }
+
+
     }
 
     public boolean isResearchedUnCached() {
@@ -91,6 +140,8 @@ public class ResearchWidget extends SimpleTextButton {
 
     @Override
     public boolean checkMouseOver(int mouseX, int mouseY) {
+        if(researchStage == ResearchStage.LOCKED) return false;
+
         return ResearchScreen.getMouseOverWidget()
                 .filter(value -> value == parent && super.checkMouseOver(mouseX, mouseY))
                 .isPresent();
@@ -107,5 +158,10 @@ public class ResearchWidget extends SimpleTextButton {
 
     public List<ResearchWidget> getParentWidgets() {
        return ResearchScreen.Instance.getResearchWidgets().stream().filter(s -> research.getParentResearch().contains(s.research)).toList();
+    }
+
+    @Override
+    public boolean shouldDraw() {
+        return hideRender.isRender();
     }
 }
