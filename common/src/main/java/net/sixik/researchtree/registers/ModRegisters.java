@@ -16,6 +16,7 @@ import net.sixik.researchtree.research.rewards.ItemReward;
 import net.sixik.researchtree.research.rewards.Reward;
 import net.sixik.researchtree.api.managers.TeamManager;
 import net.sixik.researchtree.research.rewards.StageReward;
+import net.sixik.researchtree.research.triggers.*;
 
 import java.util.*;
 import java.util.function.Function;
@@ -34,6 +35,12 @@ public class ModRegisters {
     private static final List<Supplier<TeamManager>> TEAM_MANAGERS = new ArrayList<>();
     private static final Map<String, Supplier<BaseFunction>> FUNCTION_MAP = new HashMap<>();
     private static final List<StageManager> STAGE_MANAGERS = new ArrayList<>();
+    private static final Map<String, Function<Void, BaseTrigger>> TRIGGERS_FUNC = new HashMap<>();
+
+    public static void registerTrigger(Function<Void, BaseTrigger> supplier) {
+        BaseTrigger tr = supplier.apply(null);
+        TRIGGERS_FUNC.put(tr.getId(), supplier);
+    }
 
     public static void registerStageManager(Supplier<StageManager> managerSupplier) {
         STAGE_MANAGERS.add(managerSupplier.get());
@@ -84,6 +91,10 @@ public class ModRegisters {
         return Optional.ofNullable(FUNCTION_MAP.get(functionId));
     }
 
+    public static Optional<Function<Void, BaseTrigger>> getTriggerFunc(String className) {
+        return Optional.ofNullable(TRIGGERS_FUNC.get(className));
+    }
+
     public static List<StageManager> getStageManagers() {
         return STAGE_MANAGERS;
     }
@@ -109,6 +120,12 @@ public class ModRegisters {
 
         registerFunction(CommandFunction::new);
         registerFunction(ScriptFunction::new);
+
+        registerTrigger(BreakBlockTrigger::new);
+        registerTrigger(ItemInHandTrigger::new);
+        registerTrigger(LocateTrigger::new);
+        registerTrigger(MobKillTrigger::new);
+        registerTrigger(CustomTrigger::new);
     }
 
 }

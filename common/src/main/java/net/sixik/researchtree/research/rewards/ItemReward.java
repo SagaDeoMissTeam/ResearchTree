@@ -87,4 +87,9 @@ public class ItemReward extends Reward{
     public String getId() {
         return "item_reward";
     }
+
+    @Override
+    protected Reward copy() {
+        return new ItemReward(itemStack);
+    }
 }

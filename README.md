@@ -5,6 +5,7 @@ ResearchTreeMod - The mod adds a research tree to the game, which will be useful
 ## Integration
 - CraftTweaker
 - KubeJS
+- FTB Teams
 
 # For Modpack Developers
 To create your own research trees, you can use scripts for 2 mods. (CraftTweaker, KubeJS) </br>
@@ -34,6 +35,8 @@ After creating the research tree, localization keys are generated for the title 
 | Method                   | Params                                                                  | Return             | Descriptions                                                                                                               | Example                                                                                                                                   |
 |--------------------------|-------------------------------------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
 | addParent                | researchId as ResourceLocation                                          |                    | Adds N to the study as a parent                                                                                            | addParent(<resource:minecraft:research_1>);                                                                                               |
+| addTrigger               | id as String, arg as Object[]                                           |                    | Adds triggers. Until they are completed, the research will be hidden.                                                      | addTrigger("break_block_trigger", <block:minecraft:dirt>);                                                                                |
+| addCustomTrigger         | function as BiFunction<ServerPlayer, BaseResearch, Boolean>             |                    | Adds custom trigger. Until they are completed, the research will be hidden.                                                | addCustomTrigger((player, research) -> { player.sendSystemMessage("Complete!"); return true; } );                                         |
 | addRequirement           | id as String, arg as Object[]                                           |                    | Adds requirements to the research. Accepts the requirement ID and arguments                                                | addRequirement("net.sixik.researchtree.research.requirements.ItemRequirements", <item:minecraft:diamond> * 42)                            |
 | addReward                | id as String, arg as Object[]                                           |                    | Adds reward to the research. Accepts the reward ID and arguments                                                           | addReward("net.sixik.researchtree.research.rewards.ItemReward", <item:minecraft:iron_ingot> * 5)                                          |
 | addRequirementBuilder    | id as String, arg as Object[]                                           | RequirementBuilder | Adds requirements to the research. Accepts the requirement ID and arguments                                                | addRequirement("net.sixik.researchtree.research.requirements.ItemRequirements", <item:minecraft:diamond> * 42).addTooltip("Hello World"); |
@@ -77,6 +80,15 @@ The ID of the elements to add to the study using `addRequirement` and `addReward
 | item_reward    | ItemStack | Reward in the form of an item                      |
 | command_reward | String    | Reward in the form of an command. Support {player} |
 | stage_reward   | String    | Reward in the form of an stage                     |
+
+### Triggers
+
+| Id                  | Arguments                             | Description                                                       |
+|---------------------|---------------------------------------|-------------------------------------------------------------------|
+| block_break_trigger | Block or BlockState                   | Executed when the block was broken                                |
+| item_trigger        | ItemStack                             | It is performed when the player has an object in one of his hands |
+| locate_trigger      | LocateType(Id), LocateType(Arguments) | It is executed when the player is in the specified location.      |
+| entity_kill_task    | ResourceLocation                      | Executed when the player kills a mob                              |
 
 ### Functions
 
@@ -122,6 +134,14 @@ Responsible for the display conditions
 | texture | id as String or ResourceLocation | Sets the icon based on the path to the texture |
 | item    | item as Item or ItemStack        | Sets the icon based on the item                |
 
+### LocateType
+
+| Id | Arguments        | Description |
+|----|------------------|-------------|
+| 0  | ResourceLocation | Dimension   |
+| 1  | ResourceLocation | Biome       |
+| 2  | ResourceLocation | Structure   |
+| 3  | BlockPos         | Position    |
 
 ## Example
 

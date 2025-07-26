@@ -16,6 +16,7 @@ import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.utils.ResearchRenderUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -50,14 +51,19 @@ public abstract class Requirements implements TooltipSupport {
     @Environment(EnvType.CLIENT)
     public void drawCustomTooltip(GuiGraphics graphics, int x, int y, RenderTooltip tooltip, TooltipList list) {
         addTooltip(list);
-        for (Component component : getTooltipReady(Minecraft.getInstance().level.registryAccess())) {
-            list.add(component);
-        }
+
+        getCachedTooltip().forEach(list::add);
 
         ResearchRenderUtils.drawTooltip(graphics, x,y, list);
     }
 
-    public abstract Requirements copy();
+    protected abstract Requirements copy();
+
+    public final Requirements copyInternal() {
+        Requirements copy = copy();
+        copy.addTooltip(this.tooltips);
+        return copy;
+    }
 
     public abstract <T extends Requirements> Codec<T> codec();
     public abstract <T extends Requirements> StreamCodec<RegistryFriendlyByteBuf, T> streamCodec();
@@ -71,6 +77,18 @@ public abstract class Requirements implements TooltipSupport {
     @Override
     public List<String> getTooltipList() {
         return tooltips;
+    }
+
+    @Override
+    public void addTooltip(Collection<String> str) {
+        tooltips.addAll(str);
+        cachedTooltips = null;
+    }
+
+    @Override
+    public void addTooltip(String str) {
+        tooltips.add(str);
+        cachedTooltips = null;
     }
 
     @Override

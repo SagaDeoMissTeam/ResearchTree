@@ -19,6 +19,8 @@ import net.sixik.researchtree.research.functions.BaseFunction;
 import net.sixik.researchtree.research.functions.ScriptFunction;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
+import net.sixik.researchtree.research.triggers.BaseTrigger;
+import net.sixik.researchtree.research.triggers.LocateType;
 import net.sixik.researchtree.utils.ResearchIconHelper;
 import org.openzen.zencode.java.ZenCodeType;
 
@@ -27,6 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -86,6 +89,7 @@ public class ResearchTreeBuilder {
         protected List<String> descriptions = new ArrayList<>();
         protected List<RequirementBuilder> requirementBuilders = new ArrayList<>();
         protected List<RewardBuilder> rewardBuilders = new ArrayList<>();
+        protected List<TriggerBuilder> triggerBuilders = new ArrayList<>();
         protected List<ResourceLocation> parents = new ArrayList<>();
         protected List<BaseFunction> onStartFunction = new ArrayList<>();
         protected List<BaseFunction> onEndFunction = new ArrayList<>();
@@ -120,6 +124,19 @@ public class ResearchTreeBuilder {
         @ZenCodeType.Method
         public ResearchBuilder addReward(String id, Object... arg) {
             rewardBuilders.add(new RewardBuilder(this, id, arg));
+            return this;
+        }
+
+
+        @ZenCodeType.Method
+        public ResearchBuilder addTrigger(String id, Object... arg) {
+            triggerBuilders.add(new TriggerBuilder(this, id, arg));
+            return this;
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder addCustomTrigger(BiFunction<ServerPlayer, BaseResearch, Boolean> function) {
+            triggerBuilders.add(new TriggerBuilder(this, "custom_trigger", new Object[]{ function }));
             return this;
         }
 
@@ -251,6 +268,8 @@ public class ResearchTreeBuilder {
             BaseResearch baseResearch = new BaseResearch(researchId, iconId);
             baseResearch.setDescriptionRaw(descriptions);
 
+            List<BaseTrigger> triggers = new ArrayList<>();
+
             for (RequirementBuilder requirementBuilder : requirementBuilders) {
                 Optional<Requirements> arg = requirementBuilder.complete();
                 if(arg.isEmpty()) continue;
@@ -267,6 +286,13 @@ public class ResearchTreeBuilder {
                 baseResearch.addParent(parent);
             }
 
+            for (TriggerBuilder triggerBuilder : triggerBuilders) {
+                Optional<BaseTrigger> arg = triggerBuilder.complete();
+                if(arg.isEmpty()) continue;
+                triggers.add(arg.get());
+            }
+
+            baseResearch.setTriggers(triggers);
             baseResearch.setFunctions(onStartFunction, onEndFunction);
             baseResearch.setIconNbt(iconNbt);
 
@@ -385,6 +411,57 @@ public class ResearchTreeBuilder {
 
                 if(!tooltip.isEmpty())
                     reward.addTooltip(tooltip);
+            } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                     IllegalAccessException e) {
+                context.error(e.getMessage());
+            }
+
+            return Optional.ofNullable(reward);
+        }
+    }
+
+
+    @ZenRegister
+    @ZenCodeType.Name("mods.researchtree.TriggerBuilder")
+    public class TriggerBuilder {
+        protected String id;
+        protected Object[] arg;
+        private final ResearchBuilder builder;
+
+        public TriggerBuilder(ResearchBuilder builder, String id, Object[] arg) {
+            this.id = id;
+            this.arg = arg;
+            this.builder = builder;
+        }
+
+        @ZenCodeType.Method
+        public ResearchBuilder end() {
+            return builder;
+        }
+
+        protected Optional<BaseTrigger> complete() {
+            Optional<Function<Void, BaseTrigger>> opt = ModRegisters.getTriggerFunc(id);
+            if(opt.isEmpty()) {
+                context.error("Can't find Tigger with id [{}]", id);
+                return Optional.empty();
+            }
+
+            if(Objects.equals(id, "locate_type") && arg[0] instanceof Integer integer)
+                arg[0] = LocateType.values()[integer];
+
+            Function<Void, BaseTrigger> constr = opt.get();
+            BaseTrigger created = constr.apply(null);
+
+            Class<?>[] classes = new Class[arg.length];
+            for (int i = 0; i < arg.length; i++) {
+                arg[i] = context.convert(arg[i]);
+                classes[i] = arg[i].getClass();
+            }
+            BaseTrigger reward = null;
+
+            try {
+                Constructor<? extends BaseTrigger> d1 = created.getClass().getConstructor(classes);
+                reward = d1.newInstance(arg);
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                      IllegalAccessException e) {
                 context.error(e.getMessage());

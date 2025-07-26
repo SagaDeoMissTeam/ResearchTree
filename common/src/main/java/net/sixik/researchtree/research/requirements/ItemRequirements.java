@@ -119,7 +119,7 @@ public class ItemRequirements extends Requirements {
     }
 
     @Override
-    public Requirements copy() {
+    protected Requirements copy() {
         return new ItemRequirements(itemStack);
     }
 

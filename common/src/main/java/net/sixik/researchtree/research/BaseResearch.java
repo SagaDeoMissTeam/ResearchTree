@@ -26,6 +26,7 @@ import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C
 import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.functions.BaseFunction;
 import net.sixik.researchtree.research.manager.PlayerResearchData;
+import net.sixik.researchtree.research.manager.ResearchManager;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
 import net.sixik.researchtree.research.requirements.Requirements;
 import net.sixik.researchtree.research.rewards.Reward;
@@ -88,6 +89,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
     private List<BaseFunction> onStartFunctions = new ArrayList<>();
     private List<BaseFunction> onEndFunctions = new ArrayList<>();
     private List<BaseTrigger> triggers = new ArrayList<>();
+    private int triggerId = 0;
 
     @Environment(EnvType.CLIENT)
     private Icon cachedIcon = null;
@@ -152,10 +154,14 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
 
     public void setTriggers(List<BaseTrigger> triggers) {
         this.triggers = triggers;
+        this.triggers.forEach(s -> {
+            s.setIndex(triggerId);
+            triggerId++;
+        });
     }
 
     public List<BaseTrigger> getTriggers() {
-        return new ArrayList<>(triggers);
+        return triggers;
     }
 
     public boolean isShouldRenderConnection() {
@@ -272,7 +278,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         HashSet<Requirements> result = new HashSet<>();
 
         for (Requirements requirement : getRequirements()) {
-            result.add(requirement.copy());
+            result.add(requirement.copyInternal());
         }
 
         for (BaseResearch parentResearch : getParentResearch()) {
@@ -288,7 +294,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
                 }
 
                 if (!merged) {
-                    result.add(parentReq.copy());
+                    result.add(parentReq.copyInternal());
                 }
             }
         }
@@ -434,6 +440,80 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         onEndFunctions.stream().filter(BaseFunction::isAfterStage).forEach(s -> s.execute((ServerPlayer) player, this));
     }
 
+    public boolean hasTrigger() {
+        return !triggers.isEmpty() || triggerId != 0;
+    }
+
+    public boolean isTriggerComplete(Player player, BaseTrigger trigger) {
+        return isTriggerComplete(player, trigger.getIndex());
+    }
+
+    public boolean isTriggerComplete(Player player, int id) {
+        ResearchManager manager;
+
+        if(player instanceof ServerPlayer)
+            manager = ResearchUtils.getManager(false);
+        else manager = ResearchUtils.getManager(true);
+
+        PlayerResearchData playerData = manager.getOrCreatePlayerData(player);
+        Optional<PlayerResearchData.TriggerResearchData> dataOpt = playerData.getTriggerDataOrCreate(this.getId());
+        if(dataOpt.isEmpty())
+            throw new RuntimeException("Trigger data is null!");
+
+        PlayerResearchData.TriggerResearchData data = dataOpt.get();
+        return data.isComplete(id);
+    }
+
+    public boolean isTriggersComplete(Player player) {
+        ResearchManager manager;
+
+        if(player instanceof ServerPlayer)
+            manager = ResearchUtils.getManager(false);
+        else manager = ResearchUtils.getManager(true);
+
+        PlayerResearchData playerData = manager.getOrCreatePlayerData(player);
+        Optional<PlayerResearchData.TriggerResearchData> dataOpt = playerData.getTriggerDataOrCreate(this.getId());
+        if(dataOpt.isEmpty())
+            throw new RuntimeException("Trigger data is null!");
+
+        PlayerResearchData.TriggerResearchData data = dataOpt.get();
+        for (BaseTrigger trigger : getTriggers()) {
+            if(!data.isComplete(trigger.getIndex()))
+                return false;
+        }
+
+        return true;
+    }
+
+    public boolean isTriggersComplete(Player player, int triggers) {
+        List<Integer> integers = new ArrayList<>();
+        for (int i = 0; i < triggers; i++) {
+            integers.add(i);
+        }
+        return isTriggersComplete(player, integers);
+    }
+
+    public boolean isTriggersComplete(Player player, Collection<Integer> triggersId) {
+        ResearchManager manager;
+
+        if(player instanceof ServerPlayer)
+            manager = ResearchUtils.getManager(false);
+        else manager = ResearchUtils.getManager(true);
+
+        PlayerResearchData playerData = manager.getOrCreatePlayerData(player);
+        Optional<PlayerResearchData.TriggerResearchData> dataOpt = playerData.getTriggerDataOrCreate(this.getId());
+        if(dataOpt.isEmpty())
+            throw new RuntimeException("Trigger data is null!");
+
+        PlayerResearchData.TriggerResearchData data = dataOpt.get();
+        for (Integer trigger : triggersId) {
+            if(!data.isComplete(trigger))
+                return false;
+        }
+
+        return true;
+    }
+
     public void sendNotify(Player player) {
         player.sendSystemMessage(Component.literal("Research Completed!"));
     }
@@ -482,6 +562,7 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         nbt.putInt("countParentsToResearch", countParentsToResearch);
         nbt.putInt("showType", showType.ordinal());
         nbt.putInt("hideTypeRender", hideTypeRender.ordinal());
+        nbt.putInt("triggerId", triggerId);
 
         if(!iconNbt.isEmpty())
             nbt.put("iconNbt", iconNbt);
@@ -510,11 +591,13 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
             hideTypeRender = ResearchHideTypeRender.values()[nbt.getInt("hideTypeRender")];
         if(nbt.contains("iconNbt"))
             iconNbt = (CompoundTag) nbt.get("iconNbt");
+        if(nbt.contains("triggerId"))
+            triggerId = nbt.getInt("triggerId");
 
         NbtUtils.getList(nbt, REQUIREMENTS_KEY, tag -> {
             CompoundTag d1 = (CompoundTag) (tag);
             String key = Codec.STRING.decode(NbtOps.INSTANCE, d1.get(ModRegisters.ID_KEY)).getOrThrow().getFirst();
-            var data = ModRegisters.getRequirements(key).map(s -> s.decode(NbtOps.INSTANCE, d1.get(ModRegisters.DATA_KEY))).orElseThrow().getOrThrow().getFirst();
+            Requirements data = ModRegisters.getRequirements(key).map(s -> s.decode(NbtOps.INSTANCE, d1.get(ModRegisters.DATA_KEY))).orElseThrow().getOrThrow().getFirst();
             data.addTooltip(Codec.STRING.listOf().decode(NbtOps.INSTANCE, d1.get(TooltipSupport.TOOLTIP_KEY)).getOrThrow().getFirst());
             return data;
         }, getRequirements());

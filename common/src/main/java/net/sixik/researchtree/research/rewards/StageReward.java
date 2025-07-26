@@ -67,4 +67,9 @@ public class StageReward extends Reward{
     public String getId() {
         return "stage_reward";
     }
+
+    @Override
+    protected Reward copy() {
+        return new StageReward(stage);
+    }
 }

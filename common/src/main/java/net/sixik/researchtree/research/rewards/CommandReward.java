@@ -72,4 +72,9 @@ public class CommandReward extends Reward{
     public String getId() {
         return "command_reward";
     }
+
+    @Override
+    protected Reward copy() {
+        return new CommandReward(command);
+    }
 }

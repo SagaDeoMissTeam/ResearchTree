@@ -88,43 +88,6 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
         }
     }
 
-//    public List<UUID> syncPlayerDataWithTeammates(UUID playerGameProfile) {
-//        TeammatesResearch teammatesResearch = getUnlockedTeammatesResearch(playerGameProfile);
-//        PlayerResearchData mainPlayerData = getOrCreatePlayerData(playerGameProfile);
-//        mainPlayerData.addUnlockedResearch(teammatesResearch.researches);
-//        return teammatesResearch.teammates;
-//    }
-//
-//    public void syncPlayerTeamData(UUID playerGameProfile) {
-//        for (UUID playerTeammate : ResearchUtils.getPlayerTeammates(playerGameProfile)) {
-//            syncPlayerDataWithTeammates(playerTeammate);
-//        }
-//    }
-//
-//    public TeammatesResearch getUnlockedTeammatesResearch(UUID playerGameProfile) {
-//        TeammatesResearch teammatesResearch = new TeammatesResearch(new ArrayList<>(), new ArrayList<>());
-//        PlayerResearchData mainPlayerData = getOrCreatePlayerData(playerGameProfile);
-//        List<UUID> teammatesIds = ResearchUtils.getPlayerTeammates(playerGameProfile);
-//
-//        for (UUID teammatesId : teammatesIds) {
-//            boolean founded = false;
-//            PlayerResearchData teammateData = getOrCreatePlayerData(teammatesId);
-//
-//            for (ResourceLocation unlockedResearch : teammateData.getUnlockedResearch()) {
-//
-//                if(!mainPlayerData.hasResearch(unlockedResearch) && !teammatesResearch.researches.contains(unlockedResearch)) {
-//                    teammatesResearch.researches.add(unlockedResearch);
-//                    founded = true;
-//                }
-//            }
-//
-//            if(founded)
-//                teammatesResearch.teammates.add(teammatesId);
-//        }
-//
-//        return teammatesResearch;
-//    }
-
     public final void tickResearchData() {
         long deltaTimeMs = System.currentTimeMillis() - lastTickTime;
 

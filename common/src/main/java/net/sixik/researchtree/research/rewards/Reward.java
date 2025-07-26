@@ -16,6 +16,7 @@ import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.utils.ResearchRenderUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public abstract class Reward implements TooltipSupport {
@@ -35,10 +36,21 @@ public abstract class Reward implements TooltipSupport {
     @Environment(EnvType.CLIENT)
     public void drawCustomTooltip(GuiGraphics graphics, int x, int y, RenderTooltip tooltip, TooltipList list) {
         addTooltip(list);
-        for (Component component : getTooltipReady(Minecraft.getInstance().level.registryAccess())) {
-            list.add(component);
-        }
+        getCachedTooltip().forEach(list::add);
+
         ResearchRenderUtils.drawTooltip(graphics,x,y,list);
+    }
+
+    @Override
+    public void addTooltip(Collection<String> str) {
+        tooltips.addAll(str);
+        cachedTooltips = null;
+    }
+
+    @Override
+    public void addTooltip(String str) {
+        tooltips.add(str);
+        cachedTooltips = null;
     }
 
     public void addTooltip(TooltipList list) {}
@@ -48,6 +60,14 @@ public abstract class Reward implements TooltipSupport {
 
     public String getId() {
         return this.getClass().getName();
+    }
+
+    protected abstract Reward copy();
+
+    public final Reward copyInternal() {
+        Reward copy = copy();
+        copy.addTooltip(tooltips);
+        return copy;
     }
 
     @Override
