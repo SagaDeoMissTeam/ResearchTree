@@ -65,7 +65,6 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         this(UUID.fromString(playerId), resourceLocations, researchProgressData, triggerResearchData);
     }
 
-    @Environment(EnvType.SERVER)
     public void updateCache(ServerResearchManager manager, Player player) {
         if(cachedCantResearchResearches == null)
             cachedCantResearchResearches = new HashSet<>();
@@ -77,12 +76,10 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         }).toList());
     }
 
-    @Environment(EnvType.SERVER)
     public HashSet<BaseResearch> getCachedCantResearchResearches() {
         return cachedCantResearchResearches == null ? new HashSet<>() : cachedCantResearchResearches;
     }
 
-    @Environment(EnvType.SERVER)
     public HashSet<BaseResearch> getCachedUnlockedResearchesOrCreate(ServerResearchManager manager, Player player) {
         if(cachedCantResearchResearches == null)
             updateCache(manager, player);

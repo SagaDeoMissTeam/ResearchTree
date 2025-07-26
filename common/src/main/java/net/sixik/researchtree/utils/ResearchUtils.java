@@ -33,6 +33,10 @@ public class ResearchUtils {
         return Optional.ofNullable(getManager(isClient));
     }
 
+    public static ResearchManager getFirstManager() {
+        return ServerResearchManager.getInstance() != null ? ServerResearchManager.getInstance() : ClientResearchManager.getInstance();
+    }
+
     @SuppressWarnings("unchecked")
     public static <T extends ResearchManager> T getManagerCast(boolean isClient) {
         return isClient ? (T)ClientResearchManager.getInstance() : (T)ServerResearchManager.getInstance();

@@ -25,6 +25,7 @@ import net.sixik.researchtree.network.fromServer.SendCompleteResearchingS2C;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataChangeS2C;
 import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.functions.BaseFunction;
+import net.sixik.researchtree.research.manager.ClientResearchManager;
 import net.sixik.researchtree.research.manager.PlayerResearchData;
 import net.sixik.researchtree.research.manager.ResearchManager;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
@@ -164,7 +165,6 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         return triggers;
     }
 
-    @Environment(EnvType.SERVER)
     public List<Integer> getTriggersIds() {
         return triggers.stream().map(BaseTrigger::getIndex).toList();
     }
@@ -530,21 +530,18 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         return true;
     }
 
-    public void executeTrigger(ServerResearchManager manager, Player player, Object... args) {
-        manager.getPlayerDataOptional(player).ifPresent(playerResearchData -> {
-
-        });
-    }
-
     public void sendNotify(Player player) {
         player.sendSystemMessage(Component.literal("Research Completed!"));
     }
 
-    public boolean canResearch(Player player) {
-        return true;
-    }
-
     public boolean isLocked(Player player) {
+
+        if(!isTriggersComplete(player))
+            return true;
+
+        if(!ResearchUtils.isResearchParentsResearched(player, this, ResearchUtils.getFirstManager() instanceof ClientResearchManager))
+            return true;
+
         return false;
     }
 

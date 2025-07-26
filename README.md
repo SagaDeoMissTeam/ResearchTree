@@ -93,12 +93,13 @@ The ID of the elements to add to the study using `addRequirement` and `addReward
 | ftbquests_requirement | Long      | Requirements in the form of an quest |
 
 ### Rewards
-| Id               | Arguments | Description                                        |
-|------------------|-----------|----------------------------------------------------|
-| item_reward      | ItemStack | Reward in the form of an item                      |
-| command_reward   | String    | Reward in the form of an command. Support {player} |
-| stage_reward     | String    | Reward in the form of an stage                     |
-| ftbquests_reward | Long      | Reward in the form of an quest                     |
+| Id               | Arguments                        | Description                                                             |
+|------------------|----------------------------------|-------------------------------------------------------------------------|
+| item_reward      | ItemStack                        | Reward in the form of an item                                           |
+| command_reward   | String                           | Reward in the form of an command. Support {player}                      |
+| stage_reward     | String                           | Reward in the form of an stage                                          |
+| structure_reward | ResourceLocation, offsetY as int | As a reward, it creates a structure based on the player's coordinates.  |
+| ftbquests_reward | Long                             | Reward in the form of an quest                                          |
 
 ### Triggers
 
