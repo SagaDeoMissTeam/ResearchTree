@@ -45,7 +45,8 @@ public abstract class BaseFunction {
 
     public enum ExecuteStage {
         BEFORE,
-        AFTER
+        AFTER,
+        NONE
     }
 
     public ExecuteStage getExecuteStage() {

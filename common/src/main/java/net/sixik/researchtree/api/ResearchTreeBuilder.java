@@ -1,6 +1,7 @@
 package net.sixik.researchtree.api;
 
 import com.blamejared.crafttweaker.api.annotation.ZenRegister;
+import dev.latvian.mods.rhino.CustomFunction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -141,6 +142,20 @@ public class ResearchTreeBuilder {
         }
 
         @ZenCodeType.Method
+        public TriggerBuilder addTriggerBuilder(String id, Object... arg) {
+            TriggerBuilder builder = new TriggerBuilder(this, id, arg);
+            triggerBuilders.add(builder);
+            return builder;
+        }
+
+        @ZenCodeType.Method
+        public TriggerBuilder addCustomTriggerBuilder(BiFunction<ServerPlayer, BaseResearch, Boolean> function) {
+            TriggerBuilder builder = new TriggerBuilder(this, "custom_trigger", new Object[]{ function });
+            triggerBuilders.add(builder);
+            return builder;
+        }
+
+        @ZenCodeType.Method
         public RequirementBuilder addRequirementBuilder(String id, Object... arg) {
             RequirementBuilder t = new RequirementBuilder(this, id, arg);
             requirementBuilders.add(t);
@@ -227,12 +242,12 @@ public class ResearchTreeBuilder {
 
         @ZenCodeType.Method
         public ResearchBuilder addFunctionOnStart(int executeStage, String functionId, Object... args) {
-            return addFunction(onStartFunction, executeStage, functionId, args);
+            return addFunction(this, onStartFunction, executeStage, functionId, args);
         }
 
         @ZenCodeType.Method
         public ResearchBuilder addFunctionOnEnd(int executeStage, String functionId, Object... args) {
-            return addFunction(onEndFunction, executeStage, functionId, args);
+            return addFunction(this, onEndFunction, executeStage, functionId, args);
         }
 
         @ZenCodeType.Method
@@ -247,11 +262,11 @@ public class ResearchTreeBuilder {
             return this;
         }
 
-        private ResearchBuilder addFunction(Collection<BaseFunction> funcList, int executeStage, String functionId, Object... arg) {
+        protected <T> T addFunction(T returnObj, Collection<BaseFunction> funcList, int executeStage, String functionId, Object... arg) {
             Optional<Supplier<BaseFunction>> funcOpt = ModRegisters.getFunctionSupplier(functionId);
             if(funcOpt.isEmpty()) {
                 context.error("Can't find function with id '" + functionId + "'");
-                return this;
+                return returnObj;
             }
 
             BaseFunction func = funcOpt.get().get();
@@ -260,7 +275,7 @@ public class ResearchTreeBuilder {
                 func.setArgs(arg);
                 funcList.add(func);
             }
-            return this;
+            return returnObj;
         }
 
 
@@ -426,12 +441,25 @@ public class ResearchTreeBuilder {
     public class TriggerBuilder {
         protected String id;
         protected Object[] arg;
+        protected List<BaseFunction> functions;
         private final ResearchBuilder builder;
 
         public TriggerBuilder(ResearchBuilder builder, String id, Object[] arg) {
             this.id = id;
             this.arg = arg;
+            this.functions = new ArrayList<>();
             this.builder = builder;
+        }
+
+        @ZenCodeType.Method
+        public TriggerBuilder addFunction(String id, Object... args) {
+            return builder.addFunction(this, functions, 2, id, args);
+        }
+
+        @ZenCodeType.Method
+        public TriggerBuilder addCustomFunction(BiConsumer<ServerPlayer, BaseResearch> function) {
+            this.functions.add(new ScriptFunction(function, 2));
+            return this;
         }
 
         @ZenCodeType.Method
@@ -462,6 +490,7 @@ public class ResearchTreeBuilder {
             try {
                 Constructor<? extends BaseTrigger> d1 = created.getClass().getConstructor(classes);
                 reward = d1.newInstance(arg);
+                reward.addFunction(functions);
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                      IllegalAccessException e) {
                 context.error(e.getMessage());

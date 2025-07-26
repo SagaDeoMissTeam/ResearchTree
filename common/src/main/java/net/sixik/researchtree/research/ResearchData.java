@@ -26,7 +26,7 @@ public class ResearchData implements FullCodecSerializer<ResearchData> {
 
     public static final ResourceLocation DEFAULT = ResourceLocation.tryBuild(ResearchTree.MODID, "default");
     public static final Function<String, ResourceLocation> ADDITION_DEFAULT = (s) -> ResourceLocation.tryBuild(ResearchTree.MODID, "default_" + s);
-    public static final int MaxResearchesSendByNetwork = 20;
+    public static final int MaxResearchesSendByNetwork = 15;
 
     public static final Codec<ResearchData> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(

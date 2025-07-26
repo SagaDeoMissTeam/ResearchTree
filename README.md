@@ -2,6 +2,11 @@
 
 ResearchTreeMod - The mod adds a research tree to the game, which will be useful for developers who want to make a step-by-step development.
 
+## Features
+- Async Logic
+- Automatic tree generation based on builder parameters
+- Powerful Script API
+
 ## Integration
 - CraftTweaker
 - KubeJS
@@ -37,6 +42,8 @@ After creating the research tree, localization keys are generated for the title 
 | addParent                | researchId as ResourceLocation                                          |                    | Adds N to the study as a parent                                                                                            | addParent(<resource:minecraft:research_1>);                                                                                               |
 | addTrigger               | id as String, arg as Object[]                                           |                    | Adds triggers. Until they are completed, the research will be hidden.                                                      | addTrigger("break_block_trigger", <block:minecraft:dirt>);                                                                                |
 | addCustomTrigger         | function as BiFunction<ServerPlayer, BaseResearch, Boolean>             |                    | Adds custom trigger. Until they are completed, the research will be hidden.                                                | addCustomTrigger((player, research) -> { player.sendSystemMessage("Complete!"); return true; } );                                         |
+| addTriggerBuilder        | id as String, arg as Object[]                                           | TriggerBuilder     | Adds triggers. Until they are completed, the research will be hidden.                                                      | addTriggerBuilder("break_block_trigger", <block:minecraft:dirt>);                                                                         |
+| addCustomTriggerBuilder  | function as BiFunction<ServerPlayer, BaseResearch, Boolean>             | TriggerBuilder     | Adds custom trigger. Until they are completed, the research will be hidden.                                                | addCustomTriggerBuilder((player, research) -> { player.sendSystemMessage("Complete!"); return true; } );                                  |
 | addRequirement           | id as String, arg as Object[]                                           |                    | Adds requirements to the research. Accepts the requirement ID and arguments                                                | addRequirement("net.sixik.researchtree.research.requirements.ItemRequirements", <item:minecraft:diamond> * 42)                            |
 | addReward                | id as String, arg as Object[]                                           |                    | Adds reward to the research. Accepts the reward ID and arguments                                                           | addReward("net.sixik.researchtree.research.rewards.ItemReward", <item:minecraft:iron_ingot> * 5)                                          |
 | addRequirementBuilder    | id as String, arg as Object[]                                           | RequirementBuilder | Adds requirements to the research. Accepts the requirement ID and arguments                                                | addRequirement("net.sixik.researchtree.research.requirements.ItemRequirements", <item:minecraft:diamond> * 42).addTooltip("Hello World"); |
@@ -55,13 +62,22 @@ After creating the research tree, localization keys are generated for the title 
 | addCustomFunctionOnEnd   | executeStage as int, function as BiConsumer<ServerPlayer, BaseResearch> |                    | Adds a custom function that will be performed at the end of the study                                                      | addCustomFunctionOnEnd(1, (player, research) -> { player.sendSystemMessage("Hello world!"); })                                            |
 
 ### RequirementBuilder or RewardBuilder
-- For CraftTweaker ```import mods.researchtree.RewardBuilder```
-- For CraftTweaker ```import mods.researchtree.RequirementBuilder```
+- For CraftTweaker ```import mods.researchtree.RewardBuilder;```
+- For CraftTweaker ```import mods.researchtree.RequirementBuilder;```
 
 | Method     | Params              | Return          | Description            | Example                               |
 |------------|---------------------|-----------------|------------------------|---------------------------------------|
 | addTooltip | tooltip as String[] | Object          | Add tooltip for object | addTooltip("my.key.for.localization") |
 | end        |                     | ResearchBuilder |                        | end()                                 |
+
+### TriggerBuilder
+- For CraftTweaker ```import mods.researchtree.TriggerBuilder;```
+
+| Method            | Params                                             | Return          | Description                            | Example                                                                                   |
+|-------------------|----------------------------------------------------|-----------------|----------------------------------------|-------------------------------------------------------------------------------------------|
+| addFunction       | functionId as String, args as Object[]             | TriggerBuilder  | Executed after the trigger is complete | addFunction("command", "/time set day");                                                  |
+| addCustomFunction | function as BiConsumer<ServerPlayer, BaseResearch> | TriggerBuilder  | Executed after the trigger is complete | addCustomFunction(1, (player, research) -> { player.sendSystemMessage("Hello world!"); }) |
+| end               |                                                    | ResearchBuilder |                                        | end()                                                                                     |
 
 
 ## ContentIds

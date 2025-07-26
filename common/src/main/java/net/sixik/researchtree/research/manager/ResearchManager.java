@@ -12,8 +12,11 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.api.interfaces.FullCodecSerializer;
+import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataS2C;
+import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -54,8 +57,60 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
         return playersResearchData;
     }
 
+    public final boolean updateTriggerDataAndSync(Player player) {
+        if(player instanceof ServerPlayer serverPlayer) {
+
+            boolean value = updateTriggerData(player);
+            if(value)
+                SendPlayerResearchDataS2C.sendTo(serverPlayer);
+
+            return value;
+        }
+
+        return false;
+    }
+
+    public final boolean updateTriggerData(Player player) {
+        UUID playerGameProfile = player.getGameProfile().getId();
+        Optional<PlayerResearchData> optional;
+
+        synchronized (syncPlayerDataObject) {
+            optional = getPlayerDataOptionalUnSafe(playerGameProfile);
+        }
+
+        return optional.filter(data -> updateTriggerData(data, player)).isPresent();
+
+    }
+
+    public final boolean updateTriggerData(PlayerResearchData data, Player player) {
+        if(this instanceof ServerResearchManager serverResearchManager) {
+            for (BaseResearch allResearch : serverResearchManager.getAllResearches()) {
+                if(!allResearch.hasTrigger()) continue;
+                if(allResearch.isResearched(player, false)) {
+                    data.removeTriggerData(allResearch.getId());
+                } else {
+                    if (!allResearch.isCanResearch(player, false)) continue;
+
+                    if (!allResearch.isResearched(player, false))
+                        data.getTriggerDataOrCreate(allResearch.getId());
+                }
+            }
+
+            return true;
+        }
+        return false;
+    }
+
     public PlayerResearchData getOrCreatePlayerData(Player player) {
-        return getOrCreatePlayerData(player.getGameProfile());
+        synchronized (syncPlayerDataObject) {
+            UUID playerGameProfile = player.getGameProfile().getId();
+            Optional<PlayerResearchData> optional = getPlayerDataOptionalUnSafe(playerGameProfile);
+            if (optional.isPresent()) return optional.get();
+            PlayerResearchData playerData = new PlayerResearchData(playerGameProfile);
+            updateTriggerData(playerData, player);
+            playersResearchData.add(playerData);
+            return playerData;
+        }
     }
 
     public PlayerResearchData getOrCreatePlayerData(GameProfile profile) {
@@ -64,12 +119,16 @@ public class ResearchManager implements FullCodecSerializer<ResearchManager> {
 
     public PlayerResearchData getOrCreatePlayerData(UUID playerGameProfile) {
         synchronized (syncPlayerDataObject) {
-            Optional<PlayerResearchData> optional = playersResearchData.stream().filter(data -> Objects.equals(playerGameProfile, data.getPlayerId())).findFirst();
+            Optional<PlayerResearchData> optional = getPlayerDataOptionalUnSafe(playerGameProfile);
             if (optional.isPresent()) return optional.get();
             PlayerResearchData playerData = new PlayerResearchData(playerGameProfile);
             playersResearchData.add(playerData);
             return playerData;
         }
+    }
+
+    protected Optional<PlayerResearchData> getPlayerDataOptionalUnSafe(UUID gameProfileId) {
+        return playersResearchData.stream().filter(data -> Objects.equals(gameProfileId, data.getPlayerId())).findFirst();
     }
 
     public Optional<PlayerResearchData> getPlayerDataOptional(Player player) {

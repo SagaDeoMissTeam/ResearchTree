@@ -2,6 +2,8 @@ package net.sixik.researchtree.research.manager;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -10,13 +12,13 @@ import net.minecraft.world.entity.player.Player;
 import net.sixik.researchtree.ResearchTree;
 import net.sixik.researchtree.api.interfaces.FullCodecSerializer;
 import net.sixik.researchtree.research.BaseResearch;
-import net.sixik.researchtree.research.ResearchChangeType;
 import net.sixik.researchtree.utils.ResearchUtils;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class PlayerResearchData implements FullCodecSerializer<PlayerResearchData> {
 
@@ -40,8 +42,9 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
     protected final List<ResourceLocation> unlockedResearch;
     protected final List<ResearchProgressData> progressData;
     protected final List<TriggerResearchData> triggerResearchData;
-    protected volatile boolean playerOnline = true;
+    private HashSet<BaseResearch> cachedCantResearchResearches;
 
+    protected volatile boolean playerOnline = true;
 
     protected final Object syncResearch = new Object();
     protected final Object syncProgress = new Object();
@@ -60,6 +63,30 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
 
     protected PlayerResearchData(String playerId, List<ResourceLocation> resourceLocations, List<ResearchProgressData> researchProgressData, List<TriggerResearchData> triggerResearchData) {
         this(UUID.fromString(playerId), resourceLocations, researchProgressData, triggerResearchData);
+    }
+
+    @Environment(EnvType.SERVER)
+    public void updateCache(ServerResearchManager manager, Player player) {
+        if(cachedCantResearchResearches == null)
+            cachedCantResearchResearches = new HashSet<>();
+
+        this.cachedCantResearchResearches.clear();
+        this.cachedCantResearchResearches.addAll(manager.getAllResearches().stream().filter(s -> {
+            if(containsInProgress(s.getId()) || containsInProgress(s.getId())) return false;
+            return s.isCanResearch(player, false);
+        }).toList());
+    }
+
+    @Environment(EnvType.SERVER)
+    public HashSet<BaseResearch> getCachedCantResearchResearches() {
+        return cachedCantResearchResearches == null ? new HashSet<>() : cachedCantResearchResearches;
+    }
+
+    @Environment(EnvType.SERVER)
+    public HashSet<BaseResearch> getCachedUnlockedResearchesOrCreate(ServerResearchManager manager, Player player) {
+        if(cachedCantResearchResearches == null)
+            updateCache(manager, player);
+        return cachedCantResearchResearches;
     }
 
     public UUID getPlayerId() {
@@ -198,7 +225,28 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
     public Optional<TriggerResearchData> getTriggerDataOrCreate(ResourceLocation triggerId) {
         synchronized (syncTriggers) {
             if(hasResearch(triggerId) || containsInProgress(triggerId)) return Optional.empty();
-            return getTriggerDataUnSafe(triggerId);
+            Optional<TriggerResearchData> optData = getTriggerDataUnSafe(triggerId);
+            if(optData.isPresent()) return optData;
+            TriggerResearchData data = new TriggerResearchData(triggerId);
+            triggerResearchData.add(data);
+            return Optional.of(data);
+        }
+    }
+
+    public Optional<TriggerResearchData> getTriggerDataOrCreate(ResourceLocation triggerId, Function<ResourceLocation, TriggerResearchData> dataSupplier) {
+        synchronized (syncTriggers) {
+            if(hasResearch(triggerId) || containsInProgress(triggerId)) return Optional.empty();
+            Optional<TriggerResearchData> optData = getTriggerDataUnSafe(triggerId);
+            if(optData.isPresent()) return optData;
+            TriggerResearchData data = dataSupplier.apply(triggerId);
+            triggerResearchData.add(data);
+            return Optional.of(data);
+        }
+    }
+
+    public boolean removeTriggerData(ResourceLocation triggerId) {
+        synchronized (syncTriggers) {
+           return triggerResearchData.removeIf(s -> s.getResearchId().equals(triggerId));
         }
     }
 
@@ -528,9 +576,5 @@ public class PlayerResearchData implements FullCodecSerializer<PlayerResearchDat
         public StreamCodec<FriendlyByteBuf, TriggerResearchData> streamCodec() {
             return STREAM_CODEC;
         }
-    }
-
-    public interface Event {
-        void onEvent(ResourceLocation researchId, ResearchChangeType type);
     }
 }

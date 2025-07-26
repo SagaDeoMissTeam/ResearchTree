@@ -84,6 +84,8 @@ public class ResearchUtils {
     public static boolean canStartResearch(Player player, BaseResearch research, ResearchManager manager) {
         if(getResearchStage(player, research, manager) != ResearchStage.UN_RESEARCHED) return false;
 
+        if(!isResearchParentsResearched(player, research, manager instanceof ClientResearchManager)) return false;
+
         for (Requirements requirement : research.getRequirements()) {
             if(!requirement.canExecute(player, research)) return false;
         }

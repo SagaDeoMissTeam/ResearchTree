@@ -45,4 +45,9 @@ public class MobKillTrigger extends BaseTrigger{
     public String getId() {
         return "entity_kill_task";
     }
+
+    @Override
+    public EventType getEventType() {
+        return EventType.MOB_KILL;
+    }
 }

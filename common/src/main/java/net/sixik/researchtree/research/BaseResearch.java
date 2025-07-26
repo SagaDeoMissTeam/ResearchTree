@@ -164,6 +164,11 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         return triggers;
     }
 
+    @Environment(EnvType.SERVER)
+    public List<Integer> getTriggersIds() {
+        return triggers.stream().map(BaseTrigger::getIndex).toList();
+    }
+
     public boolean isShouldRenderConnection() {
         return shouldRenderConnection;
     }
@@ -435,9 +440,20 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
 
             sendNotify(player);
 
-            if(sendPacket) SendCompleteResearchingS2C.sendTo((ServerPlayer) player, this.getId());
+            if(sendPacket)
+                SendCompleteResearchingS2C.sendTo((ServerPlayer) player, this.getId());
+
+            manager.updateTriggerData(playerData, player);
         });
         onEndFunctions.stream().filter(BaseFunction::isAfterStage).forEach(s -> s.execute((ServerPlayer) player, this));
+    }
+
+    public boolean isCanResearch(Player player, boolean isClient) {
+        return ResearchUtils.canStartResearch(player, this, isClient);
+    }
+
+    public boolean isResearched(Player player, boolean isClient) {
+        return ResearchUtils.isResearched(player, this, isClient);
     }
 
     public boolean hasTrigger() {
@@ -512,6 +528,12 @@ public class BaseResearch implements FullCodecSerializer<BaseResearch> {
         }
 
         return true;
+    }
+
+    public void executeTrigger(ServerResearchManager manager, Player player, Object... args) {
+        manager.getPlayerDataOptional(player).ifPresent(playerResearchData -> {
+
+        });
     }
 
     public void sendNotify(Player player) {

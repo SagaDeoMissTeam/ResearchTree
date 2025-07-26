@@ -14,6 +14,7 @@ import net.sixik.researchtree.registers.ModRegisters;
 import net.sixik.researchtree.research.BaseResearch;
 import net.sixik.researchtree.research.ResearchData;
 import net.sixik.researchtree.api.managers.TeamManager;
+import net.sixik.researchtree.research.triggers.BaseTrigger;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -337,10 +338,27 @@ public class ServerResearchManager extends ResearchManager {
 
             if(researches.isEmpty()) return Optional.of(false);
             findResearchesByIds(researches).forEach(s -> s.onResearchEnd(player, false, false));
-
+            updateTriggerData(mainPlayerManager, player);
             SendPlayerResearchDataS2C.sendTo(player, mainPlayerManager);
 
             return Optional.of(true);
         }).isPresent();
+    }
+
+    public void tickTriggersLimit(Player player, Object... args) {
+        if(player.level().getGameTime() % ResearchTree.MOD_CONFIG.getTickCheck() == 0) {
+            tickTriggers(player, args);
+        }
+    }
+
+    public void tickTriggers(Player player, Object... args) {
+        getPlayerDataOptional(player).ifPresent(playerResearchData -> {
+            for (BaseResearch baseResearch : playerResearchData.getCachedUnlockedResearchesOrCreate(this, player)) {
+                for (BaseTrigger trigger : baseResearch.getTriggers()) {
+                    if(baseResearch.isTriggerComplete(player, trigger)) continue;
+                    trigger.executeInternal(this, playerResearchData, baseResearch, player, args);
+                }
+            }
+        });
     }
 }

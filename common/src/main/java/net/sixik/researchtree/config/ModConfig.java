@@ -22,6 +22,9 @@ public class ModConfig {
     private BooleanValue enableKeyBinding;
     private StringValue researchTreeId;
     private DoubleValue defaultRefundPercent;
+    private BooleanValue enableTriggers;
+    private IntValue tickCheck;
+    private BooleanValue asyncTrigger;
 
     public ModConfig(String name, Path path) {
         this.name = name;
@@ -60,6 +63,14 @@ public class ModConfig {
         enableInventoryButton = subConfig.addBoolean("InventoryButton", true);
         enableInventoryButton.comment("Displays a button to open the research tree in the inventory");
 
+        subConfig = config.addGroup("TriggerSettings");
+        asyncTrigger = config.addBoolean("AsyncTriggers", false);
+        asyncTrigger.comment("Distributes the logic to a separate thread to optimize the server's TPS. (WIP) \n\n Please note that if some addon does not provide for use in a multithreaded environment, you will get crashes!");
+        enableTriggers = subConfig.addBoolean("EnableTriggers", true);
+        enableTriggers.comment("Are triggers enabled? It is recommended to disable them if you do not use them. \nNeed to restart the server!");
+        tickCheck = subConfig.addInt("TickCheckInterval", 20, 0, Integer.MAX_VALUE);
+        tickCheck.comment("How often will the triggers be checked?");
+
         return config;
     }
 
@@ -89,6 +100,18 @@ public class ModConfig {
 
     public double getDefaultRefundPercent() {
         return defaultRefundPercent.get();
+    }
+
+    public int getTickCheck() {
+        return tickCheck.get();
+    }
+
+    public boolean getAsyncTrigger() {
+        return asyncTrigger.get();
+    }
+
+    public boolean getEnableTriggers() {
+        return enableTriggers.get();
     }
 
     public Optional<ResourceLocation> getResearchTreeId() {

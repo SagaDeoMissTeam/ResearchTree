@@ -1,8 +1,9 @@
 package net.sixik.researchtree;
 
-import dev.architectury.event.events.common.CommandRegistrationEvent;
-import dev.architectury.event.events.common.LifecycleEvent;
-import dev.architectury.event.events.common.PlayerEvent;
+import dev.architectury.event.EventResult;
+import dev.architectury.event.events.common.*;
+import net.minecraft.server.level.ServerPlayer;
+import net.sixik.researchtree.config.ModConfig;
 import net.sixik.researchtree.network.fromServer.SendPlayerResearchDataS2C;
 import net.sixik.researchtree.research.manager.ServerResearchManager;
 
@@ -34,6 +35,19 @@ public class ResearchTreeModEvents {
             ServerResearchManager.getInstance().getPlayerDataOptional(serverPlayer).ifPresent(playerData -> {
                 playerData.updatePlayerOnline(ResearchTree.MOD_CONFIG.getResearchWhenPlayerOffline());
             });
+        });
+
+        TickEvent.PLAYER_POST.register(player -> {
+            if(ServerResearchManager.getInstance() != null)
+                ServerResearchManager.getInstance().tickTriggersLimit(player);
+        });
+
+        EntityEvent.LIVING_DEATH.register((livingEntity, damageSource) -> {
+            if(damageSource.getDirectEntity() instanceof ServerPlayer serverPlayer) {
+                
+            }
+
+            return EventResult.interruptDefault();
         });
     }
 }

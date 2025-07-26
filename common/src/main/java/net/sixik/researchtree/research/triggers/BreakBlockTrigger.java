@@ -47,4 +47,9 @@ public class BreakBlockTrigger extends BaseTrigger {
     public String getId() {
         return "block_break_trigger";
     }
+
+    @Override
+    public EventType getEventType() {
+        return EventType.BLOCK_BREAK;
+    }
 }
